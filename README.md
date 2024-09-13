@@ -28,8 +28,8 @@ This is a monorepo containing the following services:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/your-organization/cms-backend-services.git
-   cd cms-backend-services
+   git clone https://github.com/Danny-Lenko/story-pull-backend.git
+   cd story-pull-backend
    ```
 
 2. Install dependencies for all services:
