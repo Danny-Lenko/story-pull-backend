@@ -20,5 +20,8 @@
   },
   "scripts": {
     "prepare": "husky"
+  },
+  "dependencies": {
+    "@types/jest": "^29.5.13"
   }
 }
