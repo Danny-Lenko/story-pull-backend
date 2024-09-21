@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { environmentSettings } from '../config';
+import { Logger } from '../config';
 
-export class AppError extends Error {
+export interface AppError extends Error {
+  statusCode: number;
+  isOperational: boolean;
+}
+
+export class ApplicationError extends Error implements AppError {
+  public name: string;
+
   constructor(
     public statusCode: number,
     public message: string,
@@ -9,6 +16,7 @@ export class AppError extends Error {
     public stack = '',
   ) {
     super(message);
+    this.name = this.constructor.name;
     if (stack) {
       this.stack = stack;
     } else {
@@ -24,19 +32,41 @@ export const errorHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction,
 ) => {
-  const status = err instanceof AppError ? err.statusCode : 500;
+  const statusCode = (err as AppError).statusCode || 500;
+  const isOperational = (err as AppError).isOperational || false;
   const message = err.message || 'Internal Server Error';
 
   // Log the error
-  console.error(`[${new Date().toISOString()}] ${status} - ${message}`);
+  Logger.error(`Error: ${message}`, {
+    statusCode,
+    stack: err.stack,
+    isOperational,
+    path: req.path,
+    method: req.method,
+  });
 
-  // Don't leak error details in production
-  // const error = environmentSettings.logLevel === 'debug' ? err : {};
-
-  res.status(status).json({
-    error: {
-      message,
-      ...(environmentSettings.logLevel === 'debug' && { stack: err.stack }),
-    },
+  res.status(statusCode).json({
+    status: 'error',
+    statusCode,
+    message: statusCode === 500 ? 'Internal Server Error' : message,
   });
 };
+
+export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
+  const err = new Error(`Not Found - ${req.originalUrl}`) as AppError;
+  err.statusCode = 404;
+  err.isOperational = true;
+  next(err);
+};
+
+export class ServiceUnavailableError extends Error implements AppError {
+  statusCode: number;
+  isOperational: boolean;
+
+  constructor(serviceName: string) {
+    super(`Service Unavailable: ${serviceName}`);
+    this.name = 'ServiceUnavailableError';
+    this.statusCode = 503;
+    this.isOperational = true;
+  }
+}

@@ -22,6 +22,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@types/jest": "^29.5.13"
+    "@types/jest": "^29.5.13",
+    "http-proxy-middleware": "^3.0.2"
   }
 }
