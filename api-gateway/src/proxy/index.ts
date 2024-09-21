@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 
 import { Logger, services } from '../config';
-import { ServiceUnavailableError } from '../middleware/errorHandler';
+import { ServiceUnavailableError } from '../middleware/errorHandlerMiddleware';
 
 const { auth, content, user, analytics, media, search } = services;
 

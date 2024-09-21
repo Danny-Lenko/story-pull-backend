@@ -2,17 +2,25 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 
 import { environmentSettings, Logger } from './config';
-import { errorHandler, ApplicationError, notFoundHandler } from './middleware/errorHandler';
-import { errorLoggingMiddleware, loggingMiddleware } from './middleware/loggers';
+import {
+  errorHandler,
+  ApplicationError,
+  notFoundHandler,
+} from './middleware/errorHandlerMiddleware';
+import { errorLoggingMiddleware, loggingMiddleware } from './middleware/loggersMiddleware';
 import routes from './routes';
 import { proxyMiddleware } from './proxy';
+import { authMiddleware } from './middleware/authMiddleware';
+// import { generateToken } from './utils/tokenUtils';
 
 const app = express();
 const port = environmentSettings.port;
 
 app.use(cors());
+app.use(cookieParser());
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
@@ -30,18 +38,25 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the CMS API Gateway' });
 });
 
-app.get('/not-exist', (req, res, next) => {
-  try {
-    // throw new ApplicationError(404, 'Resource not found');
-    next(new ApplicationError(404, 'Resource not found'));
-  } catch (error) {
-    next(error);
-  }
-});
-
 app.get('/error-example', (req, res, next) => {
   next(new ApplicationError(400, 'This is a test error'));
 });
+
+app.get('/protected', authMiddleware, (req, res) => {
+  res.json({ message: 'This is a protected route' });
+});
+
+// app.get('/login', (req, res, next) => {
+//   const mockUser = { username: 'admin', password: 'password' };
+//   const { username, password } = mockUser;
+//   if (username === 'admin' && password === 'password') {
+//     const token = generateToken({ id: '1', role: 'admin' });
+//     res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+//     res.json({ message: 'Login successful' });
+//   } else {
+//     next(new ApplicationError(401, 'Invalid credentials'));
+//   }
+// });
 
 app.use(errorLoggingMiddleware);
 

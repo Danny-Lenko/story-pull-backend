@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router, Request, Response, NextFunction } from 'express';
 import { AsyncHandler } from '../decorators/asyncHandler';
+import { generateToken } from '../utils/tokenUtils';
+import { ApplicationError } from '../middleware/errorHandlerMiddleware';
+
 const router = Router();
 
 class AuthController {
@@ -8,7 +11,17 @@ class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     // Your login logic here
     // Example: throw new Error('Invalid credentials');
-    res.status(200).json({ message: 'Login successful' });
+    // res.status(200).json({ message: 'Login successful' });
+
+    // This is a mock login. In a real scenario, you'd verify credentials against your user service.
+    const { username, password } = req.body;
+    if (username === 'admin' && password === 'password') {
+      const token = generateToken({ id: '1', role: 'admin' });
+      res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+      res.json({ message: 'Login successful' });
+    } else {
+      next(new ApplicationError(401, 'Invalid credentials'));
+    }
   }
 
   @AsyncHandler
@@ -20,7 +33,10 @@ class AuthController {
   @AsyncHandler
   async logout(req: Request, res: Response, next: NextFunction) {
     // Your logout logic here
-    res.status(200).json({ message: 'Logged out successfully' });
+    // res.status(200).json({ message: 'Logged out successfully' });
+
+    res.clearCookie('token');
+    res.json({ message: 'Logout successful' });
   }
 
   @AsyncHandler
