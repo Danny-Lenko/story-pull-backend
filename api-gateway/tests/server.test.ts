@@ -21,14 +21,20 @@ describe('Express Server', () => {
   it('should handle non-existent routes', async () => {
     const response = await request(app).get('/not-exist');
     expect(response.status).toBe(404);
-    expect(response.body.error).toBeDefined();
-    expect(response.body.error.message).toBe('Resource not found');
+    expect(response.body).toEqual({
+      status: 'error',
+      statusCode: 404,
+      message: 'Resource not found',
+    });
   });
 
   it('should handle errors', async () => {
     const response = await request(app).get('/error-example');
     expect(response.status).toBe(400);
-    expect(response.body.error).toBeDefined();
-    expect(response.body.error.message).toBe('This is a test error');
+    expect(response.body).toEqual({
+      status: 'error',
+      statusCode: 400,
+      message: 'This is a test error',
+    });
   });
 });

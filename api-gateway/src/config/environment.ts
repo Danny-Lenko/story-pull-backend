@@ -15,7 +15,7 @@ const config: Record<string, Environment> = {
     logLevel: 'debug',
   },
   test: {
-    port: process.env.PORT || 4001,
+    port: process.env.PORT || 5000,
     logLevel: 'error',
   },
   production: {

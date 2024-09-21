@@ -9,7 +9,9 @@
     "strict": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "allowJs": true
+    "allowJs": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "ts-node": {
     "esm": true,

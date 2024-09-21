@@ -39,9 +39,11 @@ const transports = [
   new winston.transports.File({ filename: 'logs/all.log' }),
 ];
 
-export const Logger = winston.createLogger({
+const Logger = winston.createLogger({
   level: level(),
   levels,
   format,
   transports,
 });
+
+export default Logger;
