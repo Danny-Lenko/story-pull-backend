@@ -24,7 +24,7 @@ describe('Express Server', () => {
     expect(response.body).toEqual({
       status: 'error',
       statusCode: 404,
-      message: 'Resource not found',
+      message: 'Not Found - /not-exist',
     });
   });
 
