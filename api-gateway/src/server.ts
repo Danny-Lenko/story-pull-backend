@@ -14,7 +14,8 @@ import { errorLoggingMiddleware, loggingMiddleware } from './middleware/loggersM
 import routes from './routes';
 import { proxyMiddleware } from './proxy';
 import { authMiddleware } from './middleware/authMiddleware';
-// import { generateToken } from './utils/tokenUtils';
+import { checkCollectionContents } from './mongo/checkCollectionContents';
+import { closeMongoClient } from './mongo/mongodb';
 
 const app = express();
 const port = environmentSettings.port;
@@ -46,6 +47,7 @@ app.get('/protected', authMiddleware, (req, res) => {
   res.json({ message: 'This is a protected route' });
 });
 
+// used to test the login route
 // app.get('/login', (req, res, next) => {
 //   const mockUser = { username: 'admin', password: 'password' };
 //   const { username, password } = mockUser;
@@ -67,6 +69,8 @@ const server = app.listen(port, () => {
   console.log(`API gateway is running on port ${port}`);
 });
 
+checkCollectionContents();
+
 process.on('unhandledRejection', (reason: Error) => {
   Logger.error('Unhandled Rejection:', reason);
   // Optionally, you can throw the error and let the `uncaughtException` handler deal with it
@@ -78,6 +82,11 @@ process.on('uncaughtException', (error: Error) => {
   Logger.error('Uncaught Exception:', error);
   // Perform a graceful shutdown
   process.exit(1);
+});
+
+process.on('SIGINT', async () => {
+  await closeMongoClient();
+  process.exit(0);
 });
 
 export { app, server };
