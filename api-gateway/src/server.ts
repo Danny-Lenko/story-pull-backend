@@ -16,6 +16,8 @@ import { proxyMiddleware } from './proxy';
 import { authMiddleware } from './middleware/authMiddleware';
 import { checkCollectionContents } from './mongo/checkCollectionContents';
 import { closeMongoClient } from './mongo/mongodb';
+import { checkPostgresConnection } from './postgres/checkPostgresConnections';
+import { closePool } from './postgres/postgres';
 
 const app = express();
 const port = environmentSettings.port;
@@ -69,7 +71,10 @@ const server = app.listen(port, () => {
   console.log(`API gateway is running on port ${port}`);
 });
 
+// mongo
 checkCollectionContents();
+// postgres
+checkPostgresConnection();
 
 process.on('unhandledRejection', (reason: Error) => {
   Logger.error('Unhandled Rejection:', reason);
@@ -86,6 +91,7 @@ process.on('uncaughtException', (error: Error) => {
 
 process.on('SIGINT', async () => {
   await closeMongoClient();
+  await closePool();
   process.exit(0);
 });
 
