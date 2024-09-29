@@ -22,7 +22,7 @@ This is a monorepo containing the following services:
 - Node.js (v18 or later)
 - npm or yarn
 - Docker and Docker Compose
-- MongoDB and PostgreSQL (can be run in Docker)
+- MongoDB and PostgreSQL (run in Docker)
 
 ### Installation
 
