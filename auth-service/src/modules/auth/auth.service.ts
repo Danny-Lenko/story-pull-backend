@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../models/user.model';
+import { RegisterDto } from './register.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,19 +13,18 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(email: string, password: string): Promise<User> {
-    const existingUser = await this.userModel.findOne({ email }).exec();
+  async register({ email, password }: RegisterDto): Promise<User> {
+    const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new this.userModel({ email, password: hashedPassword });
-    return newUser.save();
+    return this.userModel.create({ email, password: hashedPassword });
   }
 
   async login(email: string, password: string): Promise<{ accessToken: string }> {
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userModel.findOne({ email });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }

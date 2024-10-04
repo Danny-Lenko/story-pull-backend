@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
+
+import { AppModule } from './app.module';
+import { ValidationPipe } from './shared/pipes/validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +18,8 @@ async function bootstrap() {
       port: configService.get<number>('AUTH_SERVICE_PORT'),
     },
   });
+
+  app.useGlobalPipes(new ValidationPipe());
 
   await app.startAllMicroservices();
   await app.listen(configService.get<number>('AUTH_SERVICE_HTTP_PORT'));
