@@ -5,6 +5,11 @@ import { RpcException } from '@nestjs/microservices';
 import { User } from '../../models/user.model';
 import { RegisterDto } from './register.dto';
 import { LoginDto } from './login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+
+// Mock JwtAuthGuard
+jest.mock('../../shared/guards/jwt-auth.guard');
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -21,8 +26,17 @@ describe('AuthController', () => {
             login: jest.fn(),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get<AuthService>(AuthService);

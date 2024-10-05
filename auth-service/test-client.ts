@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy, Transport, ClientProxyFactory, ClientOptions } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 class TestClient {
@@ -26,8 +27,12 @@ class TestClient {
     return this.client.send({ cmd: 'register' }, { email, password }).toPromise();
   }
 
-  async login(email: string, password: string) {
+  async login({ email, password }) {
     return this.client.send({ cmd: 'login' }, { email, password }).toPromise();
+  }
+
+  async validateToken(token: string) {
+    return firstValueFrom(this.client.send({ cmd: 'validateToken' }, { token }));
   }
 }
 
@@ -47,13 +52,27 @@ async function runTests() {
 
     // Test login
     console.log('Testing login...');
-    const loginResult = await testClient.login('test@example.com', 'password123');
+    const loginResult = await testClient.login({
+      email: 'test@example.com',
+      password: 'password123',
+    });
     console.log('Login result:', loginResult);
+
+    // Test token validation with valid token
+    console.log('Testing token validation with valid token...');
+    const validationResult = await testClient.validateToken(loginResult.accessToken);
+    console.log('Validation result:', validationResult);
+
+    // Test token validation with invalid token
+    console.log('Testing token validation with invalid token...');
+    const invalidValidationResult = await testClient.validateToken('invalid_token');
+    console.log('Invalid token validation result:', invalidValidationResult);
 
     // Test invalid login
     console.log('Testing invalid login...');
+
     try {
-      await testClient.login('test@example.com', 'wrongpassword');
+      await testClient.login({ email: 'test@example.com', password: 'wrongpassword' });
     } catch (error) {
       console.log('Invalid login error:', error);
     }

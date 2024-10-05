@@ -1,10 +1,11 @@
-import { Body, Controller, UseFilters } from '@nestjs/common';
+import { Body, Controller, Logger, UseFilters, UseGuards } from '@nestjs/common';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
-import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { RegisterDto } from './register.dto';
-import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { LoginDto } from './login.dto';
+import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
+import { ValidationPipe } from '../../shared/pipes/validation.pipe';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
 @Controller()
 @UseFilters(new RpcExceptionFilter())
@@ -27,5 +28,13 @@ export class AuthController {
     } catch (error) {
       throw new RpcException(error);
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @MessagePattern({ cmd: 'validateToken' })
+  async validateToken(data: { token: string }) {
+    Logger.log('DATA', data);
+    // If we reach here, the token is valid (the guard would have thrown an exception otherwise)
+    return { isValid: true };
   }
 }
