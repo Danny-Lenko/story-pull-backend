@@ -1,9 +1,10 @@
 import { Body, Controller, UseFilters } from '@nestjs/common';
-import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
+import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { RegisterDto } from './register.dto';
 import { ValidationPipe } from '../../shared/pipes/validation.pipe';
+import { LoginDto } from './login.dto';
 
 @Controller()
 @UseFilters(new RpcExceptionFilter())
@@ -20,9 +21,9 @@ export class AuthController {
   }
 
   @MessagePattern({ cmd: 'login' })
-  async login(@Payload() data: { email: string; password: string }) {
+  async login(@Body(new ValidationPipe()) loginDto: LoginDto) {
     try {
-      return await this.authService.login(data.email, data.password);
+      return await this.authService.login(loginDto);
     } catch (error) {
       throw new RpcException(error);
     }

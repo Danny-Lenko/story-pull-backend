@@ -83,7 +83,7 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.sign.mockReturnValue(accessToken);
 
-      const result = await service.login(email, password);
+      const result = await service.login({ email, password });
 
       expect(result).toEqual({ accessToken });
       expect(userModel.findOne).toHaveBeenCalledWith({ email });
@@ -97,7 +97,7 @@ describe('AuthService', () => {
 
       userModel.findOne.mockResolvedValue(null);
 
-      await expect(service.login(email, password)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email, password })).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for invalid password', async () => {
@@ -109,7 +109,7 @@ describe('AuthService', () => {
       userModel.findOne.mockResolvedValue(user);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.login(email, password)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email, password })).rejects.toThrow(UnauthorizedException);
     });
   });
 });

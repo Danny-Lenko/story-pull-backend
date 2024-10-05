@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { RpcException } from '@nestjs/microservices';
 import { User } from '../../models/user.model';
 import { RegisterDto } from './register.dto';
+import { LoginDto } from './login.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -61,24 +62,24 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should call authService.login with correct parameters', async () => {
-      const loginData = { email: 'test@example.com', password: 'password123' };
+      const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
       const expectedResult = { accessToken: 'generatedAccessToken' };
 
       jest.spyOn(authService, 'login').mockResolvedValue(expectedResult);
 
-      const result = await controller.login(loginData);
+      const result = await controller.login(loginDto);
 
       expect(result).toEqual(expectedResult);
-      expect(authService.login).toHaveBeenCalledWith(loginData.email, loginData.password);
+      expect(authService.login).toHaveBeenCalledWith(loginDto);
     });
 
     it('should throw RpcException when authService.login throws an error', async () => {
-      const loginData = { email: 'test@example.com', password: 'password123' };
+      const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
       const error = new Error('Login failed');
 
       jest.spyOn(authService, 'login').mockRejectedValue(error);
 
-      await expect(controller.login(loginData)).rejects.toThrow(RpcException);
+      await expect(controller.login(loginDto)).rejects.toThrow(RpcException);
     });
   });
 });
