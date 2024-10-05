@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RpcException } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
+import { TokenExpiredError, JsonWebTokenError, NotBeforeError } from 'jsonwebtoken';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -17,16 +18,27 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(data.token);
-      // Optionally, you can attach the payload to the request for use in your handlers
+      // Attach the payload to the request for use in handlers
       rpcContext.getContext().user = payload;
       return true;
     } catch (error) {
-      throw new RpcException({ ...error, message: 'Invalid token' });
+      if (error instanceof TokenExpiredError) {
+        throw new RpcException({ message: 'Token has expired', code: 'TOKEN_EXPIRED' });
+      } else if (error instanceof JsonWebTokenError) {
+        throw new RpcException({ message: 'Invalid token', code: 'INVALID_TOKEN' });
+      } else if (error instanceof NotBeforeError) {
+        throw new RpcException({ message: 'Token not yet active', code: 'TOKEN_NOT_ACTIVE' });
+      } else {
+        throw new RpcException({
+          message: 'Token validation failed',
+          code: 'TOKEN_VALIDATION_FAILED',
+        });
+      }
     }
   }
 }
 
-// DOCUMENTATION PIECE:
+// ============================ DOCUMENTATION PIECE:
 
 // Here's an example of how another service might validate a token:
 

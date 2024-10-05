@@ -88,7 +88,10 @@ describe('AuthService', () => {
       expect(result).toEqual({ accessToken });
       expect(userModel.findOne).toHaveBeenCalledWith({ email });
       expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
-      expect(jwtService.sign).toHaveBeenCalledWith({ email: user.email, sub: user._id });
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        { email: user.email, sub: user._id },
+        { expiresIn: '15m' },
+      );
     });
 
     it('should throw UnauthorizedException for invalid email', async () => {

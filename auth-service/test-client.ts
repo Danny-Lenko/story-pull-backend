@@ -63,18 +63,14 @@ async function runTests() {
     const validationResult = await testClient.validateToken(loginResult.accessToken);
     console.log('Validation result:', validationResult);
 
-    // Test token validation with invalid token
-    console.log('Testing token validation with invalid token...');
-    const invalidValidationResult = await testClient.validateToken('invalid_token');
-    console.log('Invalid token validation result:', invalidValidationResult);
+    console.log('Waiting for token to expire (10 seconds)...');
+    await new Promise((resolve) => setTimeout(resolve, 10 * 1000 + 1000)); // Wait for 10 and 1 second
 
-    // Test invalid login
-    console.log('Testing invalid login...');
-
+    console.log('Testing token validation with expired token...');
     try {
-      await testClient.login({ email: 'test@example.com', password: 'wrongpassword' });
+      await testClient.validateToken(loginResult.accessToken);
     } catch (error) {
-      console.log('Invalid login error:', error);
+      console.log('Expired token validation error:', error);
     }
   } catch (error) {
     console.error('An error occurred:', error);

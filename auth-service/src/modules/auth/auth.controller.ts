@@ -33,8 +33,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @MessagePattern({ cmd: 'validateToken' })
   async validateToken(data: { token: string }) {
-    Logger.log('DATA', data);
-    // If we reach here, the token is valid (the guard would have thrown an exception otherwise)
-    return { isValid: true };
+    Logger.log('VALIDATE TOKEN DATA', data);
+
+    try {
+      // If we reach here, the token is valid (the guard would have thrown an exception otherwise)
+      return { isValid: true };
+    } catch (error) {
+      Logger.error('Token validation failed', error.stack);
+      if (error instanceof RpcException) {
+        throw error; // Re-throw RpcExceptions as they are already formatted correctly
+      }
+      throw new RpcException({
+        message: 'Token validation failed',
+        code: 'TOKEN_VALIDATION_FAILED',
+      });
+    }
   }
 }
