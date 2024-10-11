@@ -34,6 +34,10 @@ class TestClient {
   async validateToken(token: string) {
     return firstValueFrom(this.client.send({ cmd: 'validateToken' }, { token }));
   }
+
+  async logout(token: string): Promise<{ message: string }> {
+    return firstValueFrom(this.client.send({ cmd: 'logout' }, { token }));
+  }
 }
 
 // Example of running the tests
@@ -42,13 +46,13 @@ async function runTests() {
   await testClient.onInit();
 
   try {
-    // Test registration
-    console.log('Testing registration...');
-    const registrationResult = await testClient.register({
-      email: 'test@example.com',
-      password: 'password123',
-    });
-    console.log('Registration result:', registrationResult);
+    // // Test registration
+    // console.log('Testing registration...');
+    // const registrationResult = await testClient.register({
+    //   email: 'test@example.com',
+    //   password: 'password123',
+    // });
+    // console.log('Registration result:', registrationResult);
 
     // Test login
     console.log('Testing login...');
@@ -63,15 +67,24 @@ async function runTests() {
     const validationResult = await testClient.validateToken(loginResult.accessToken);
     console.log('Validation result:', validationResult);
 
-    console.log('Waiting for token to expire (10 seconds)...');
-    await new Promise((resolve) => setTimeout(resolve, 10 * 1000 + 1000)); // Wait for 10 and 1 second
+    // Test logout
+    console.log('Testing logout...');
+    const logoutResult = await testClient.logout(loginResult.accessToken);
+    console.log('Logout result:', logoutResult);
 
-    console.log('Testing token validation with expired token...');
-    try {
-      await testClient.validateToken(loginResult.accessToken);
-    } catch (error) {
-      console.log('Expired token validation error:', error);
-    }
+    // Test token validation after logout
+    console.log('Testing token validation after logout...');
+    await testClient.validateToken(loginResult.accessToken);
+
+    // console.log('Waiting for token to expire (10 seconds)...');
+    // await new Promise((resolve) => setTimeout(resolve, 10 * 1000 + 1000)); // Wait for 10 and 1 second
+
+    // console.log('Testing token validation with expired token...');
+    // try {
+    //   await testClient.validateToken(loginResult.accessToken);
+    // } catch (error) {
+    //   console.log('Expired token validation error:', error);
+    // }
   } catch (error) {
     console.error('An error occurred:', error);
   }

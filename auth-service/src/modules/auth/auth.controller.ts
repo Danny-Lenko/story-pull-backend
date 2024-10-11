@@ -49,4 +49,18 @@ export class AuthController {
       });
     }
   }
+
+  @UseGuards(JwtAuthGuard)
+  @MessagePattern({ cmd: 'logout' })
+  async logout(@Body() data: { token: string }) {
+    try {
+      return await this.authService.logout(data.token);
+    } catch (error) {
+      Logger.error('Logout failed', error.stack);
+      throw new RpcException({
+        message: 'Logout failed',
+        code: 'LOGOUT_FAILED',
+      });
+    }
+  }
 }

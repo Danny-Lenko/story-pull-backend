@@ -5,16 +5,33 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { User } from '../../models/user.model';
 import * as bcrypt from 'bcrypt';
+import Redis from 'ioredis';
 
 jest.mock('bcrypt');
+
+jest.mock('@nestjs-modules/ioredis', () => ({
+  InjectRedis: () => jest.fn(),
+}));
 
 describe('AuthService', () => {
   let service: AuthService;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let userModel: any;
   let jwtService: jest.Mocked<JwtService>;
+  let redisClient: jest.Mocked<Redis>;
 
   beforeEach(async () => {
+    const mockRedisClient = {
+      set: jest.fn(),
+      get: jest.fn(),
+      del: jest.fn(),
+    };
+
+    const mockJwtService = {
+      sign: jest.fn(),
+      decode: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -27,9 +44,11 @@ describe('AuthService', () => {
         },
         {
           provide: JwtService,
-          useValue: {
-            sign: jest.fn(),
-          },
+          useValue: mockJwtService,
+        },
+        {
+          provide: Redis,
+          useValue: mockRedisClient,
         },
       ],
     }).compile();
@@ -37,6 +56,7 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     userModel = module.get(getModelToken(User.name));
     jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
+    redisClient = module.get(Redis);
   });
 
   it('should be defined', () => {
@@ -113,6 +133,42 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login({ email, password })).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('logout', () => {
+    it('should blacklist the token', async () => {
+      const token = 'valid.jwt.token';
+      const decodedToken = { exp: Math.floor(Date.now() / 1000) + 3600, sub: 'user123' };
+      jwtService.decode.mockReturnValue(decodedToken);
+
+      await service.logout(token);
+
+      expect(jwtService.decode).toHaveBeenCalledWith(token);
+      expect(redisClient.set).toHaveBeenCalledWith(
+        `blacklist:${token}`,
+        'true',
+        'EX',
+        expect.any(Number),
+      );
+    });
+
+    it('should throw UnauthorizedException for invalid token', async () => {
+      const token = 'invalid.jwt.token';
+      jwtService.decode.mockReturnValue(null);
+
+      await expect(service.logout(token)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should not blacklist expired tokens', async () => {
+      const token = 'expired.jwt.token';
+      const decodedToken = { exp: Math.floor(Date.now() / 1000) - 3600, sub: 'user123' };
+      jwtService.decode.mockReturnValue(decodedToken);
+
+      await service.logout(token);
+
+      expect(jwtService.decode).toHaveBeenCalledWith(token);
+      expect(redisClient.set).not.toHaveBeenCalled();
     });
   });
 });

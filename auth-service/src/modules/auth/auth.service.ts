@@ -6,12 +6,15 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../models/user.model';
 import { RegisterDto } from './register.dto';
 import { LoginDto } from './login.dto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   async register({ email, password }: RegisterDto): Promise<User> {
@@ -40,5 +43,21 @@ export class AuthService {
     return {
       accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
     };
+  }
+
+  async logout(token: string): Promise<{ message: string }> {
+    const decodedToken = this.jwtService.decode(token) as { exp: number; sub: string } | null;
+
+    if (!decodedToken) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const timeToExpire = decodedToken.exp - Math.floor(Date.now() / 1000);
+
+    if (timeToExpire > 0) {
+      await this.redis.set(`blacklist:${token}`, 'true', 'EX', timeToExpire);
+    }
+
+    return { message: 'Logout successful' };
   }
 }

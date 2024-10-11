@@ -1,14 +1,19 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RpcException } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
 import { TokenExpiredError, JsonWebTokenError, NotBeforeError } from 'jsonwebtoken';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  //   async canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const rpcContext = context.switchToRpc();
     const data = rpcContext.getData();
 
@@ -17,12 +22,23 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
+      // Check if the token is blacklisted
+      const isBlacklisted = await this.redis.get(`blacklist:${data.token}`);
+      console.log('IS BLACKLISTED', isBlacklisted);
+      if (isBlacklisted) {
+        throw new RpcException({ message: 'Token is blacklisted', code: 'TOKEN_BLACKLISTED' });
+      }
+
       const payload = this.jwtService.verify(data.token);
+
       // Attach the payload to the request for use in handlers
       rpcContext.getContext().user = payload;
       return true;
     } catch (error) {
-      if (error instanceof TokenExpiredError) {
+      console.error('Token validation error:', error);
+      if (error instanceof RpcException) {
+        throw error; // Re-throw RpcExceptions (including our blacklist exception)
+      } else if (error instanceof TokenExpiredError) {
         throw new RpcException({ message: 'Token has expired', code: 'TOKEN_EXPIRED' });
       } else if (error instanceof JsonWebTokenError) {
         throw new RpcException({ message: 'Invalid token', code: 'INVALID_TOKEN' });
