@@ -1,8 +1,8 @@
 import { Body, Controller, Logger, UseFilters, UseGuards } from '@nestjs/common';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './register.dto';
-import { LoginDto } from './login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';

@@ -3,8 +3,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RpcException } from '@nestjs/microservices';
 import { User } from '../../models/user.model';
-import { RegisterDto } from './register.dto';
-import { LoginDto } from './login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
