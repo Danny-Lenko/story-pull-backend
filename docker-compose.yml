@@ -29,8 +29,19 @@ services:
     volumes:
       - postgres-v:/var/lib/postgresql/data
 
+  redis:
+    image: redis/redis-stack:latest
+    container_name: my-redis-stack
+    ports:
+      - '6379:6379' # Redis port
+      - '8001:8001' # Redis Insight port
+    volumes:
+      - redis-v:/data
+
 volumes:
   mongodb-v:
     name: 'mongodb-v'
   postgres-v:
     name: 'postgres-v'
+  redis-v:
+    name: 'redis-v'

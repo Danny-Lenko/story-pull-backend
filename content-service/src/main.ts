@@ -15,20 +15,20 @@ async function bootstrap() {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
-      port: configService.get<number>('AUTH_SERVICE_PORT'),
+      port: configService.get<number>('CONTENT_SERVICE_PORT'),
     },
   });
 
   app.useGlobalPipes(new ValidationPipe());
 
   await app.startAllMicroservices();
-  await app.listen(configService.get<number>('AUTH_SERVICE_HTTP_PORT'));
+  await app.listen(configService.get<number>('CONTENT_SERVICE_HTTP_PORT'));
 
   logger.log(
-    `Auth microservice is listening on port ${configService.get<number>('AUTH_SERVICE_PORT')}`,
+    `Content microservice is listening on port ${configService.get<number>('CONTENT_SERVICE_PORT')}`,
   );
   logger.log(
-    `Auth HTTP server is listening on port ${configService.get<number>('AUTH_SERVICE_HTTP_PORT')}`,
+    `Content HTTP server is listening on port ${configService.get<number>('CONTENT_SERVICE_HTTP_PORT')}`,
   );
 }
 
