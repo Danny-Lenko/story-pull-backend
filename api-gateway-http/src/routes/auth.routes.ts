@@ -3,6 +3,15 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AsyncHandler } from '../decorators/asyncHandler';
 import { generateToken } from '../utils/tokenUtils';
 import { ApplicationError } from '../middleware/errorHandlerMiddleware';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+
+const authServiceClient = ClientProxyFactory.create({
+  transport: Transport.TCP,
+  options: {
+    host: 'localhost',
+    port: 4001, // Auth Service port
+  },
+});
 
 const router = Router();
 
@@ -27,6 +36,20 @@ class AuthController {
   @AsyncHandler
   async register(req: Request, res: Response, next: NextFunction) {
     // Your registration logic here
+
+    // try {
+    // const isValid = await authServiceClient.send({ cmd: 'resister' }, { req }).toPromise();
+    const registered = authServiceClient.send({ cmd: 'register' }, { req: req.body }).toPromise();
+    console.log('registered', registered);
+
+    // if (!isValid) {
+    //   return res.status(401).json({ message: 'Invalid token' });
+    // }
+    next();
+    // } catch (error) {
+    // return res.status(500).json({ message: 'Error validating token' });
+    // }
+
     res.status(201).json({ message: 'User registered successfully' });
   }
 

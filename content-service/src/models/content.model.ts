@@ -1,8 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
-// export type ContentDocument = Content & Document;
-
 export interface ContentDocument extends Content, Document {
   slug: string;
 }

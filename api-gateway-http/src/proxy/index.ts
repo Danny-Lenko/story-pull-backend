@@ -20,6 +20,8 @@ export const proxyMiddleware = (req: Request, res: Response, next: NextFunction)
   const service = req.path.split('/')[1]; // e.g., /api/auth/login -> auth
   const target = urls[service];
 
+  console.log('PROXY MIDDLEWARE', { service, target });
+
   // Log incoming request
   Logger.info(`Incoming request`, {
     method: req.method,

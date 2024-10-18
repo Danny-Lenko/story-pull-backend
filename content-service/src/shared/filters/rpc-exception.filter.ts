@@ -18,6 +18,8 @@ export class RpcExceptionFilter implements NestRpcExceptionFilter<RpcException> 
   ): Observable<unknown> {
     const errorResponse = exception.getError();
 
+    console.log('EXCEPTION:', exception);
+
     this.logger.error(`Exception caught: ${JSON.stringify(errorResponse)}`);
 
     return throwError(() => errorResponse);

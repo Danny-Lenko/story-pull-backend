@@ -1,22 +1,21 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "esModuleInterop": true,
-    "strict": true,
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "allowJs": true,
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
+  }
 }

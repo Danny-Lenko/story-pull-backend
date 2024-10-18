@@ -14,6 +14,9 @@ export class AuthController {
 
   @MessagePattern({ cmd: 'register' })
   async register(@Body(new ValidationPipe()) registerDto: RegisterDto) {
+    console.log('REGISTER DTO', registerDto);
+    Logger.log('REGISTER DTO', registerDto);
+
     try {
       return await this.authService.register(registerDto);
     } catch (error) {

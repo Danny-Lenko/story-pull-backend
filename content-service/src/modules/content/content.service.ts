@@ -9,7 +9,11 @@ export class ContentService {
   constructor(@InjectModel(Content.name) private contentModel: Model<ContentDocument>) {}
 
   async create(createContentDto: CreateContentDto): Promise<Content> {
-    const createdContent = new this.contentModel(createContentDto);
+    const createdContent = new this.contentModel({
+      ...createContentDto,
+      status: createContentDto.status || 'draft',
+      publishedAt: createContentDto.status === 'published' ? new Date() : null,
+    });
     return createdContent.save();
   }
 
