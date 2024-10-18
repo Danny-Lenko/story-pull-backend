@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module';
-// import { ValidationPipe } from './shared/pipes/validation.pipe';
+import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,7 +19,7 @@ async function bootstrap() {
     },
   });
 
-  // app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   await app.startAllMicroservices();
   await app.listen(configService.get<number>('HTTP_PORT'));
