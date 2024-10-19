@@ -6,7 +6,10 @@ export default () => ({
   AUTH_SERVICE_PORT: parseInt(process.env.AUTH_SERVICE_PORT, 10) || 4001,
   AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || 'http://localhost:4001',
 
+  CONTENT_SERVICE_HOST: process.env.CONTENT_SERVICE_HOST || 'localhost',
+  CONTENT_SERVICE_PORT: parseInt(process.env.CONTENT_SERVICE_PORT, 10) || 4002,
   CONTENT_SERVICE_URL: process.env.CONTENT_SERVICE_URL || 'http://localhost:4002',
+
   USER_SERVICE_URL: process.env.USER_SERVICE_URL || 'http://localhost:4003',
   ANALYTICS_SERVICE_URL: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:4004',
   MEDIA_SERVICE_URL: process.env.MEDIA_SERVICE_URL || 'http://localhost:4005',

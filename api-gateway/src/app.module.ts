@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/configuration';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './modules/auth/auth.controller';
+import { ContentController } from './modules/content/content.controller';
 
 @Module({
   imports: [
@@ -24,8 +25,19 @@ import { AuthController } from './modules/auth/auth.controller';
         }),
         inject: [ConfigService],
       },
+      {
+        name: 'CONTENT_SERVICE',
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('CONTENT_SERVICE_HOST'),
+            port: configService.get('CONTENT_SERVICE_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
     ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, ContentController],
 })
 export class AppModule {}

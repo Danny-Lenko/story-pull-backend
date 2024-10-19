@@ -14,9 +14,6 @@ export class AuthController {
 
   @MessagePattern({ cmd: 'register' })
   async register(@Body(new ValidationPipe()) registerDto: RegisterDto) {
-    console.log('REGISTER DTO', registerDto);
-    Logger.log('REGISTER DTO', registerDto);
-
     try {
       return await this.authService.register(registerDto);
     } catch (error) {
@@ -42,7 +39,7 @@ export class AuthController {
       // If we reach here, the token is valid (the guard would have thrown an exception otherwise)
       return { isValid: true };
     } catch (error) {
-      Logger.error('Token validation failed', error.stack);
+      Logger.error('Token validation failed', error);
       if (error instanceof RpcException) {
         throw error; // Re-throw RpcExceptions as they are already formatted correctly
       }
