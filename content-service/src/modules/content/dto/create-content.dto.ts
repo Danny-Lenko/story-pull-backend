@@ -6,6 +6,7 @@ import {
   ValidateNested,
   IsObject,
   MaxLength,
+  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -28,10 +29,12 @@ class SEOData {
 
 export class CreateContentDto {
   @IsString()
+  @MinLength(3)
   @MaxLength(255) // Set a maximum length for the title
   title: string;
 
   @IsString()
+  @MinLength(3)
   @MaxLength(50000) // Set a reasonable maximum length for the body
   body: string;
 
@@ -41,6 +44,7 @@ export class CreateContentDto {
   type: string;
 
   @IsString()
+  @MinLength(2)
   @MaxLength(100) // Set a maximum length for the author name
   author: string;
 

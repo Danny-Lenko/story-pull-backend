@@ -12,8 +12,6 @@ export class ContentController {
     @Body() registerDto: unknown,
     @Headers('authorization') token: string,
   ): Observable<unknown> {
-    console.log('Controller Token', token);
-
     return this.contentClient
       .send({ cmd: 'createContent' }, { data: registerDto, metadata: { authorization: token } })
       .pipe(handleRpcError());
