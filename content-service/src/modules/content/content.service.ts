@@ -9,12 +9,13 @@ export class ContentService {
   constructor(@InjectModel(Content.name) private contentModel: Model<ContentDocument>) {}
 
   async create(createContentDto: CreateContentDto): Promise<Content> {
-    const createdContent = new this.contentModel({
+    const createdContent = await this.contentModel.create({
       ...createContentDto,
       status: createContentDto.status || 'draft',
       publishedAt: createContentDto.status === 'published' ? new Date() : null,
     });
-    return createdContent.save();
+
+    return createdContent;
   }
 
   async findAll(): Promise<Content[]> {

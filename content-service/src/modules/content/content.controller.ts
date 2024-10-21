@@ -4,7 +4,7 @@ import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
-import { Auth } from 'src/shared/decorators/auth.decorator';
+import { Auth } from '../../shared/decorators/auth.decorator';
 
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
