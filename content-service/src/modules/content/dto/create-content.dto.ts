@@ -29,7 +29,7 @@ class SEOData {
 
 export class CreateContentDto {
   @IsString()
-  @MinLength(3)
+  @MinLength(3, { message: 'Title must be longer' })
   @MaxLength(255) // Set a maximum length for the title
   title: string;
 

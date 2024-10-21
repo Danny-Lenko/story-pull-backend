@@ -1,18 +1,25 @@
-import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
+import { PipeTransform, Injectable, ArgumentMetadata, Logger } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class ValidationPipe implements PipeTransform<unknown> {
-  async transform(value: unknown, { metatype }: ArgumentMetadata) {
+  private readonly logger = new Logger(ValidationPipe.name);
+
+  async transform(value: object, { metatype }: ArgumentMetadata) {
+    this.logger.debug(`ValidationPipe.transform called with metatype: ${metatype?.name}`);
+
+    const objectToValidate =
+      (value as Record<string, Record<string, string | number>>).data || value;
+
     if (!metatype || !this.toValidate(metatype)) {
+      this.logger.debug(`No validation needed for ${metatype ? metatype.name : 'primitive type'}`);
       return value;
     }
-    const object = plainToClass(metatype, value);
-    console.log('object', object);
-    const errors = await validate(object.data);
-    console.log('errors', errors);
+    const object = plainToClass(metatype, objectToValidate);
+    this.logger.debug(`Validating object: ${JSON.stringify(object)}`);
+    const errors = await validate(object);
     if (errors.length > 0) {
       const messages = errors.map((err) => {
         return `${err.property}: ${Object.values(err.constraints).join(', ')}`;
