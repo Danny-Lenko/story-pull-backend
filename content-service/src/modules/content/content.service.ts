@@ -5,32 +5,29 @@ import { Content, ContentDocument } from '../../models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
 import { PaginatedResponse } from './interfaces/paginated-response.interface';
+import { from, Observable } from 'rxjs';
 
 @Injectable()
 export class ContentService {
   constructor(@InjectModel(Content.name) private contentModel: Model<ContentDocument>) {}
 
-  async create(createContentDto: CreateContentDto): Promise<Content> {
-    const createdContent = await this.contentModel.create({
-      ...createContentDto,
-      status: createContentDto.status || 'draft',
-      publishedAt: createContentDto.status === 'published' ? new Date() : null,
-    });
-
-    return createdContent;
+  create(createContentDto: CreateContentDto): Observable<Content> {
+    return from(
+      this.contentModel.create({
+        ...createContentDto,
+        status: createContentDto.status || 'draft',
+        publishedAt: createContentDto.status === 'published' ? new Date() : null,
+      }),
+    );
   }
 
-  async findAll(): Promise<Content[]> {
-    return this.contentModel.find().exec();
+  findAllPaginated(query: QueryContentDto): Observable<PaginatedResponse<Content>> {
+    return from(this.findAllPaginatedInternal(query));
   }
 
-  async findOne(id: string): Promise<Content> {
-    return this.contentModel.findById(id).exec();
-  }
-
-  // Add more methods as needed
-
-  async findAllPaginated(query: QueryContentDto): Promise<PaginatedResponse<Content>> {
+  private async findAllPaginatedInternal(
+    query: QueryContentDto,
+  ): Promise<PaginatedResponse<Content>> {
     const { page = 1, limit = 10, type, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
     // Build filter conditions
@@ -54,6 +51,8 @@ export class ContentService {
     // Calculate last page
     const lastPage = Math.ceil(total / limit);
 
+    // throw new Error('Method not implemented.');
+
     return {
       data,
       meta: {
@@ -64,4 +63,6 @@ export class ContentService {
       },
     };
   }
+
+  // Add more methods as needed
 }
