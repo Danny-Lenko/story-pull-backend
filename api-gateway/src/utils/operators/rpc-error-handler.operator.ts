@@ -1,5 +1,5 @@
 import { Observable, catchError } from 'rxjs';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ValidationException } from '../exceptions/validation.exception';
 
 export function handleRpcError<T>() {
@@ -16,6 +16,7 @@ export function handleRpcError<T>() {
 
         // Handle validation errors
         if (error.name === 'ValidationError') {
+          Logger.debug('VALIDATION ERROR', error, 'RpcErrorHandler');
           const validationErrors = Object.values(error.errors).map(
             (err: { path: string; message: string }) => ({
               field: err.path,

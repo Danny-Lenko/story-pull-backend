@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-// import { MongooseModule } from '@nestjs/mongoose';
-// import { AuthModule } from './modules/auth/auth.module';
 import configuration from './config/configuration';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './modules/auth/auth.controller';

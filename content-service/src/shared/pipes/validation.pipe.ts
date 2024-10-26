@@ -21,10 +21,20 @@ export class ValidationPipe implements PipeTransform<unknown> {
     this.logger.debug(`Validating object: ${JSON.stringify(object)}`);
     const errors = await validate(object);
     if (errors.length > 0) {
-      const messages = errors.map((err) => {
-        return `${err.property}: ${Object.values(err.constraints).join(', ')}`;
+      // Transform errors to match ValidationException format
+      const formattedErrors = errors.map((err) => ({
+        field: err.property,
+        message: Object.values(err.constraints || {}).join(', '),
+      }));
+
+      // Throw RpcException with the formatted error structure
+      throw new RpcException({
+        name: 'ValidationError',
+        statusCode: 400,
+        message: 'Validation failed',
+        error: 'Bad Request',
+        errors: formattedErrors,
       });
-      throw new RpcException(messages);
     }
     return value;
   }
