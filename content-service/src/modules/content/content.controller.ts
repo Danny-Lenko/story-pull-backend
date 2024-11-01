@@ -6,7 +6,7 @@ import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { Auth } from '../../shared/decorators/auth.decorator';
 import { QueryContentDto } from './dto/query-content.dto';
-import { transformToRpcException } from 'src/utils/operators/rpc-transformer.operator';
+import { transformToRpcException } from '../../utils/operators/rpc-transformer.operator';
 
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
@@ -21,7 +21,7 @@ export class ContentController {
   @MessagePattern({ cmd: 'createContent' })
   @UsePipes(new ValidationPipe())
   @Auth()
-  async create(@Payload('data') data: CreateContentDto) {
+  create(@Payload('data') data: CreateContentDto) {
     this.logger.log(`Creating new content: ${JSON.stringify(data)}`);
     return this.contentService.create(data).pipe(transformToRpcException());
   }
@@ -29,8 +29,24 @@ export class ContentController {
   @MessagePattern({ cmd: 'findAllContent' })
   @UsePipes(new ValidationPipe())
   @Auth()
-  async findAll(@Payload('data') data: QueryContentDto) {
+  findAll(@Payload('data') data: QueryContentDto) {
     this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
     return this.contentService.findAllPaginated(data).pipe(transformToRpcException());
   }
+
+  // @MessagePattern({ cmd: 'createContent' })
+  // @UsePipes(new ValidationPipe())
+  // @Auth()
+  // async create(@Payload('data') data: CreateContentDto) {
+  //   this.logger.log(`Creating new content: ${JSON.stringify(data)}`);
+  //   return this.contentService.create(data).pipe(transformToRpcException());
+  // }
+
+  // @MessagePattern({ cmd: 'findAllContent' })
+  // @UsePipes(new ValidationPipe())
+  // @Auth()
+  // async findAll(@Payload('data') data: QueryContentDto) {
+  //   this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
+  //   return this.contentService.findAllPaginated(data).pipe(transformToRpcException());
+  // }
 }

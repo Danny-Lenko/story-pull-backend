@@ -51,8 +51,6 @@ export class ContentService {
     // Calculate last page
     const lastPage = Math.ceil(total / limit);
 
-    // throw new Error('Method not implemented.');
-
     return {
       data,
       meta: {
@@ -65,4 +63,12 @@ export class ContentService {
   }
 
   // Add more methods as needed
+
+  async findAll(): Promise<Content[]> {
+    return this.contentModel.find().exec();
+  }
+
+  async findOne(id: string): Promise<Content> {
+    return this.contentModel.findById(id).exec();
+  }
 }

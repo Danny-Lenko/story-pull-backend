@@ -66,7 +66,7 @@ export class Content {
       message: 'Metadata must be an object or null',
     },
   })
-  metadata: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 
   @Prop({
     type: [String],
@@ -78,12 +78,12 @@ export class Content {
       message: 'Cannot have more than 10 tags',
     },
   })
-  tags: string[];
+  tags?: string[];
 
   @Prop({
     type: Date,
   })
-  publishedAt: Date;
+  publishedAt?: Date;
 
   @Prop({
     type: {
@@ -107,7 +107,7 @@ export class Content {
       },
     },
   })
-  seo: {
+  seo?: {
     metaTitle?: string;
     metaDescription?: string;
     canonicalUrl?: string;
@@ -117,7 +117,7 @@ export class Content {
     default: 0,
     min: [0, 'Version cannot be negative'],
   })
-  version: number;
+  version?: number;
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

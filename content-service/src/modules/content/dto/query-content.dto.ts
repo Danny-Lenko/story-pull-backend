@@ -39,37 +39,3 @@ export class QueryContentDto {
   })
   sortOrder?: 'asc' | 'desc' = 'desc';
 }
-
-// import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-// import { Type } from 'class-transformer';
-
-// export class QueryContentDto {
-//   @IsOptional()
-//   @IsNumber()
-//   @Type(() => Number)
-//   @Min(1)
-//   @Max(100)
-//   limit?: number = 10;
-
-//   @IsOptional()
-//   @IsNumber()
-//   @Type(() => Number)
-//   @Min(1)
-//   page?: number = 1;
-
-//   @IsOptional()
-//   @IsEnum(['article', 'page', 'blog_post'])
-//   type?: string;
-
-//   @IsOptional()
-//   @IsEnum(['draft', 'published', 'archived'])
-//   status?: string;
-
-//   @IsOptional()
-//   @IsString()
-//   sortBy?: string = 'createdAt';
-
-//   @IsOptional()
-//   @IsEnum(['asc', 'desc'])
-//   sortOrder?: 'asc' | 'desc' = 'desc';
-// }
