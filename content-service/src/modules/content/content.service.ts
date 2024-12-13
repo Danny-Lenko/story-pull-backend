@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Content, ContentDocument } from '../../models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
 import { PaginatedResponse } from './interfaces/paginated-response.interface';
-import { from, Observable } from 'rxjs';
+import { from, Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { FindContentDto } from './dto/find-content.dto';
 
 @Injectable()
 export class ContentService {
@@ -60,6 +62,23 @@ export class ContentService {
         limit,
       },
     };
+  }
+
+  findById(id: FindContentDto): Observable<Content> {
+    return from(this.contentModel.findById(id).exec()).pipe(
+      map((content) => {
+        if (!content) {
+          throw new NotFoundException(`Content with ID "${id}" not found`);
+        }
+        return content;
+      }),
+      catchError((error) => {
+        if (error.name === 'CastError') {
+          return throwError(() => new NotFoundException(`Invalid content ID format`));
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
   // Add more methods as needed
