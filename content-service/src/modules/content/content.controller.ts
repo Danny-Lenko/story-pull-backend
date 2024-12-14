@@ -7,7 +7,6 @@ import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { Auth } from '../../shared/decorators/auth.decorator';
 import { QueryContentDto } from './dto/query-content.dto';
 import { transformToRpcException } from '../../utils/operators/rpc-transformer.operator';
-import { FindContentDto } from './dto/find-content.dto';
 
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
@@ -38,7 +37,7 @@ export class ContentController {
   @MessagePattern({ cmd: 'findContentById' })
   @UsePipes(new ValidationPipe())
   @Auth()
-  findById(@Payload() data: { id: FindContentDto }) {
+  findById(@Payload() data: { id: string }) {
     this.logger.log(`Finding content with ID: ${data.id}`);
     return this.contentService.findById(data.id).pipe(transformToRpcException());
   }

@@ -7,7 +7,6 @@ import { QueryContentDto } from './dto/query-content.dto';
 import { PaginatedResponse } from './interfaces/paginated-response.interface';
 import { from, Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { FindContentDto } from './dto/find-content.dto';
 
 @Injectable()
 export class ContentService {
@@ -64,7 +63,7 @@ export class ContentService {
     };
   }
 
-  findById(id: FindContentDto): Observable<Content> {
+  findById(id: string): Observable<Content> {
     return from(this.contentModel.findById(id).exec()).pipe(
       map((content) => {
         if (!content) {
