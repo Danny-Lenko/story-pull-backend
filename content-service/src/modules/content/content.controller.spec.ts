@@ -120,6 +120,7 @@ describe('ContentController', () => {
         page: 1,
         limit: 10,
         meta: null,
+        success: true,
       };
 
       mockContentService.findAllPaginated.mockReturnValue(of(expectedResult));

@@ -4,9 +4,10 @@ import { Model } from 'mongoose';
 import { Content, ContentDocument } from '../../models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
-import { PaginatedResponse } from './interfaces/paginated-response.interface';
+// import { PaginatedResponse } from './interfaces/paginated-response.interface';
 import { from, Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { ApiResponse } from './interfaces/api-response.interface';
 
 @Injectable()
 export class ContentService {
@@ -22,46 +23,138 @@ export class ContentService {
     );
   }
 
-  findAllPaginated(query: QueryContentDto): Observable<PaginatedResponse<Content>> {
+  findAllPaginated(query: QueryContentDto): Observable<ApiResponse<Content[]>> {
     return from(this.findAllPaginatedInternal(query));
   }
 
-  private async findAllPaginatedInternal(
-    query: QueryContentDto,
-  ): Promise<PaginatedResponse<Content>> {
-    const { page = 1, limit = 10, type, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  private async findAllPaginatedInternal(query: QueryContentDto): Promise<ApiResponse<Content[]>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        type,
+        status,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        search,
+        tags,
+        dateFrom,
+        dateTo,
+      } = query;
 
-    // Build filter conditions
-    const filter: Record<string, unknown> = {};
-    if (type) filter.type = type;
-    if (status) filter.status = status;
+      // Build filter conditions
+      const filter: Record<string, unknown> = {};
+      const appliedFilters: string[] = [];
 
-    // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
+      // Text search
+      if (search) {
+        filter.$text = { $search: search };
+        appliedFilters.push('text_search');
+      }
 
-    // Build sort object
-    // EDITED BY THE COPILOT
-    const sort: [string, 1 | -1][] = [[sortBy, sortOrder === 'asc' ? 1 : -1]];
+      // Type filter
+      if (type) {
+        filter.type = type;
+        appliedFilters.push('type');
+      }
 
-    // Execute queries
-    const [data, total] = await Promise.all([
-      this.contentModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
-      this.contentModel.countDocuments(filter),
-    ]);
+      // Status filter - now supports multiple statuses
+      if (status && status.length > 0) {
+        filter.status = { $in: status };
+        appliedFilters.push('status');
+      }
 
-    // Calculate last page
-    const lastPage = Math.ceil(total / limit);
+      // Tags filter
+      if (tags && tags.length > 0) {
+        filter.tags = { $all: tags };
+        appliedFilters.push('tags');
+      }
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        lastPage,
-        limit,
-      },
-    };
+      // Date range filter
+      if (dateFrom || dateTo) {
+        filter.createdAt = {};
+        if (dateFrom) {
+          (filter.createdAt as { $gte?: Date; $lte?: Date }).$gte = dateFrom;
+          appliedFilters.push('date_from');
+        }
+        if (dateTo) {
+          (filter.createdAt as { $gte?: Date; $lte?: Date }).$lte = dateTo;
+          appliedFilters.push('date_to');
+        }
+      }
+
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
+
+      // Build sort object
+      const sort: Record<string, 1 | -1> = {
+        [sortBy]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      // Execute queries
+      const [data, total] = await Promise.all([
+        this.contentModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
+        this.contentModel.countDocuments(filter),
+      ]);
+
+      // Calculate last page
+      const lastPage = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data,
+        meta: {
+          pagination: {
+            total,
+            page,
+            lastPage,
+            limit,
+          },
+          filter: {
+            applied: appliedFilters,
+            available: ['text_search', 'type', 'status', 'tags', 'date_from', 'date_to'],
+          },
+        },
+      };
+    } catch (error) {
+      // Log the error here
+      throw new Error('Failed to fetch content: ' + error.message);
+    }
   }
+  // ): Promise<PaginatedResponse<Content>> {
+  //   const { page = 1, limit = 10, type, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+
+  //   // Build filter conditions
+  //   const filter: Record<string, unknown> = {};
+  //   if (type) filter.type = type;
+  //   if (status) filter.status = status;
+
+  //   // Calculate skip value for pagination
+  //   const skip = (page - 1) * limit;
+
+  //   // Build sort object
+  //   // EDITED BY THE COPILOT
+  //   const sort: [string, 1 | -1][] = [[sortBy, sortOrder === 'asc' ? 1 : -1]];
+
+  //   // Execute queries
+  //   const [data, total] = await Promise.all([
+  //     this.contentModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
+  //     this.contentModel.countDocuments(filter),
+  //   ]);
+
+  //   // Calculate last page
+  //   const lastPage = Math.ceil(total / limit);
+
+  //   return {
+  //     data,
+  //     meta: {
+  //       total,
+  //       page,
+  //       lastPage,
+  //       limit,
+  //     },
+  //   };
+  // }
 
   findById(id: string): Observable<Content> {
     return from(this.contentModel.findById(id).exec()).pipe(

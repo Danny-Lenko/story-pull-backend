@@ -1,4 +1,14 @@
-import { IsEnum, IsNumber, IsOptional, Max, Min, IsIn } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  Max,
+  Min,
+  IsIn,
+  IsString,
+  IsArray,
+  IsDate,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryContentDto {
@@ -38,4 +48,25 @@ export class QueryContentDto {
     message: 'SortOrder must be either: asc or desc',
   })
   sortOrder?: 'asc' | 'desc' = 'desc';
+
+  // ==================== filterings, added 2024-12-14
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  dateFrom?: Date;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  dateTo?: Date;
 }
