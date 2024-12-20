@@ -35,7 +35,7 @@ export class QueryContentDto {
   @IsEnum(['draft', 'published', 'archived'], {
     message: 'Status must be one of: draft, published, archived',
   })
-  status?: string;
+  status?: string[];
 
   @IsOptional()
   @IsIn(['createdAt', 'title', 'publishedAt'], {

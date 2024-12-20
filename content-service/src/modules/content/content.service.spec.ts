@@ -6,6 +6,7 @@ import { CreateContentDto } from './dto/create-content.dto';
 import { lastValueFrom } from 'rxjs';
 import { Model } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
+import { QueryContentDto } from './dto/query-content.dto';
 
 describe('ContentService', () => {
   let service: ContentService;
@@ -24,7 +25,10 @@ describe('ContentService', () => {
     create: jest.fn(),
     find: jest.fn(),
     findById: jest.fn(),
+    countDocuments: jest.fn(),
   };
+
+  const mockExecFunction = jest.fn();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -39,6 +43,17 @@ describe('ContentService', () => {
 
     service = module.get<ContentService>(ContentService);
     model = module.get<Model<ContentDocument>>(getModelToken(Content.name));
+
+    mockContentModel.find.mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            exec: mockExecFunction,
+          }),
+        }),
+      }),
+    });
+    mockContentModel.countDocuments.mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -206,6 +221,208 @@ describe('ContentService', () => {
           expect(error.message).toBe('Database connection failed');
           done();
         },
+      });
+    });
+  });
+
+  describe('findAllPaginated - Filter Tests', () => {
+    it('should apply text search filter', (done) => {
+      const query: QueryContentDto = {
+        search: 'test content',
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: () => {
+          expect(mockContentModel.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+              $text: { $search: 'test content' },
+            }),
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should apply date range filter', (done) => {
+      const dateFrom = new Date('2024-01-01');
+      const dateTo = new Date('2024-02-01');
+      const query: QueryContentDto = { dateFrom, dateTo };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        next: (result) => {
+          expect(mockContentModel.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+              createdAt: {
+                $gte: dateFrom,
+                $lte: dateTo,
+              },
+            }),
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should apply multiple status filter', (done) => {
+      const query: QueryContentDto = {
+        status: ['published', 'draft'],
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: () => {
+          expect(mockContentModel.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+              status: { $in: ['published', 'draft'] },
+            }),
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should apply tags filter', (done) => {
+      const query: QueryContentDto = {
+        tags: ['javascript', 'nodejs'],
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: () => {
+          expect(mockContentModel.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+              tags: { $all: ['javascript', 'nodejs'] },
+            }),
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should apply combined filters', (done) => {
+      const dateFrom = new Date('2024-01-01');
+      const query: QueryContentDto = {
+        search: 'test',
+        type: 'article',
+        status: ['published'],
+        tags: ['javascript'],
+        dateFrom,
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: () => {
+          expect(mockContentModel.find).toHaveBeenCalledWith(
+            expect.objectContaining({
+              $text: { $search: 'test' },
+              type: 'article',
+              status: { $in: ['published'] },
+              tags: { $all: ['javascript'] },
+              createdAt: { $gte: dateFrom },
+            }),
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should handle pagination with filters', (done) => {
+      const query: QueryContentDto = {
+        type: 'article',
+        page: 2,
+        limit: 5,
+      };
+
+      const mockFindFunction = jest.fn().mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      mockContentModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue(mockFindFunction()),
+      });
+      mockContentModel.countDocuments.mockResolvedValue(15);
+
+      service.findAllPaginated(query).subscribe({
+        next: (response) => {
+          expect(response.meta.pagination).toEqual({
+            total: 15,
+            page: 2,
+            lastPage: 3,
+            limit: 5,
+          });
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should handle empty result set', (done) => {
+      const query: QueryContentDto = {
+        search: 'nonexistent',
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: (response) => {
+          expect(response.data).toEqual([]);
+          expect(response.meta.pagination.total).toBe(0);
+          expect(response.meta.pagination.lastPage).toBe(0);
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should preserve filter metadata in response', (done) => {
+      const query: QueryContentDto = {
+        search: 'test',
+        tags: ['javascript'],
+      };
+
+      mockExecFunction.mockResolvedValue([]);
+      mockContentModel.countDocuments.mockResolvedValue(0);
+
+      service.findAllPaginated(query).subscribe({
+        next: (response) => {
+          expect(response.meta.filter.applied).toContain('text_search');
+          expect(response.meta.filter.applied).toContain('tags');
+          expect(response.meta.filter.available).toEqual(
+            expect.arrayContaining([
+              'text_search',
+              'type',
+              'status',
+              'tags',
+              'date_from',
+              'date_to',
+            ]),
+          );
+          done();
+        },
+        error: done,
       });
     });
   });
