@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, Headers, Get, Query, Param } from '@nestjs/common';
+import { Body, Controller, Inject, Post, Headers, Get, Query, Param, Put } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
@@ -19,7 +19,6 @@ export class ContentController {
   }
 
   @Get()
-  // @UsePipes(new ValidationPipe())
   getPaginatedContent(
     @Query() queryContentDto: QueryContentDto,
     @Headers('authorization') token: string,
@@ -41,6 +40,18 @@ export class ContentController {
 
     return this.contentClient
       .send({ cmd: 'findContentById' }, { id, metadata: { authorization: token } })
+      .pipe(handleRpcError());
+  }
+
+  @Put(':id')
+  updateContent(
+    @Param('id') id: string,
+    @Body() updateDto: unknown,
+    @Headers('authorization') token: string,
+  ): Observable<unknown> {
+    console.log('CONTENT ID:', id);
+    return this.contentClient
+      .send({ cmd: 'updateContent' }, { id, data: updateDto, metadata: { authorization: token } })
       .pipe(handleRpcError());
   }
 }

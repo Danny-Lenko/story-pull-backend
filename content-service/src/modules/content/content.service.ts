@@ -1,13 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Content, ContentDocument } from '../../models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
-// import { PaginatedResponse } from './interfaces/paginated-response.interface';
 import { from, Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { ApiResponse } from './interfaces/api-response.interface';
+import { UpdateContentDto } from './dto/update-content.dto';
 
 @Injectable()
 export class ContentService {
@@ -121,40 +121,6 @@ export class ContentService {
       throw new Error('Failed to fetch content: ' + error.message);
     }
   }
-  // ): Promise<PaginatedResponse<Content>> {
-  //   const { page = 1, limit = 10, type, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
-
-  //   // Build filter conditions
-  //   const filter: Record<string, unknown> = {};
-  //   if (type) filter.type = type;
-  //   if (status) filter.status = status;
-
-  //   // Calculate skip value for pagination
-  //   const skip = (page - 1) * limit;
-
-  //   // Build sort object
-  //   // EDITED BY THE COPILOT
-  //   const sort: [string, 1 | -1][] = [[sortBy, sortOrder === 'asc' ? 1 : -1]];
-
-  //   // Execute queries
-  //   const [data, total] = await Promise.all([
-  //     this.contentModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
-  //     this.contentModel.countDocuments(filter),
-  //   ]);
-
-  //   // Calculate last page
-  //   const lastPage = Math.ceil(total / limit);
-
-  //   return {
-  //     data,
-  //     meta: {
-  //       total,
-  //       page,
-  //       lastPage,
-  //       limit,
-  //     },
-  //   };
-  // }
 
   findById(id: string): Observable<Content> {
     return from(this.contentModel.findById(id).exec()).pipe(
@@ -170,6 +136,45 @@ export class ContentService {
         }
         return throwError(() => error);
       }),
+    );
+  }
+
+  update(id: string, updateContentDto: UpdateContentDto): Observable<Content> {
+    return from(
+      this.findById(id).pipe(
+        switchMap((existingContent) => {
+          // If content is being published, set publishedAt
+          const updates = {
+            ...updateContentDto,
+            updatedAt: new Date(),
+            publishedAt:
+              updateContentDto.status === 'published' && existingContent.status !== 'published'
+                ? new Date()
+                : existingContent.publishedAt,
+          };
+
+          return from(
+            this.contentModel
+              .findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true })
+              .exec(),
+          );
+        }),
+        map((content) => {
+          if (!content) {
+            throw new NotFoundException(`Content with ID "${id}" not found`);
+          }
+          return content;
+        }),
+        catchError((error) => {
+          if (error.name === 'CastError') {
+            return throwError(() => new NotFoundException(`Invalid content ID format`));
+          }
+          if (error.name === 'ValidationError') {
+            return throwError(() => new BadRequestException(error.message));
+          }
+          return throwError(() => error);
+        }),
+      ),
     );
   }
 

@@ -41,12 +41,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error('Exception thrown', exceptionResponse);
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const { message: exceptionMessage, name: exceptionName } = exceptionResponse as {
+        const {
+          message: exceptionMessage,
+          name: exceptionName,
+          // ADDED ERROR ON 2024-12-21
+          error: exceptionError,
+        } = exceptionResponse as {
           message?: string;
           name?: string;
+          error?: string;
         };
         message = exceptionMessage || message;
-        error = exceptionName || exception.name || error;
+        error = exceptionName || exceptionError || exception.name || error;
       } else {
         message = exceptionResponse.toString();
       }

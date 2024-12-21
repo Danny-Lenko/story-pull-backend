@@ -8,6 +8,7 @@ import { Auth } from '../../shared/decorators/auth.decorator';
 import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 import { QueryValidationPipe } from '../../shared/filters/query-validation.filter';
+import { UpdateContentDto } from './dto/update-content.dto';
 
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
@@ -43,19 +44,11 @@ export class ContentController {
     return this.contentService.findById(data.id).pipe(transformToRpcException());
   }
 
-  // @MessagePattern({ cmd: 'createContent' })
-  // @UsePipes(new ValidationPipe())
-  // @Auth()
-  // async create(@Payload('data') data: CreateContentDto) {
-  //   this.logger.log(`Creating new content: ${JSON.stringify(data)}`);
-  //   return this.contentService.create(data).pipe(transformToRpcException());
-  // }
-
-  // @MessagePattern({ cmd: 'findAllContent' })
-  // @UsePipes(new ValidationPipe())
-  // @Auth()
-  // async findAll(@Payload('data') data: QueryContentDto) {
-  //   this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
-  //   return this.contentService.findAllPaginated(data).pipe(transformToRpcException());
-  // }
+  @MessagePattern({ cmd: 'updateContent' })
+  @UsePipes(new ValidationPipe())
+  @Auth()
+  update(@Payload() { id, data }: { id: string; data: UpdateContentDto }) {
+    this.logger.log(`Updating content with ID: ${id}`);
+    return this.contentService.update(id, data).pipe(transformToRpcException());
+  }
 }
