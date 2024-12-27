@@ -20,6 +20,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new GlobalExceptionFilter());
+  // app.useGlobalPipes(new ValidationPipe());
 
   await app.startAllMicroservices();
   await app.listen(configService.get<number>('HTTP_PORT'));

@@ -5,6 +5,9 @@ export interface ContentDocument extends Content, Document {
   slug: string;
 }
 
+const contentTypes = ['article', 'page', 'blog_post'] as const;
+const contentStatuses = ['draft', 'published', 'archived'] as const;
+
 @Schema({
   timestamps: true,
   toJSON: {
@@ -34,8 +37,8 @@ export class Content {
   @Prop({
     required: [true, 'Type is required'],
     enum: {
-      values: ['article', 'page', 'blog_post'],
-      message: '{VALUE} is not a valid content type',
+      values: contentTypes,
+      message: `{VALUE} is not a valid content type. Type must be one of the following values: ${contentTypes.join(', ')}`,
     },
   })
   type: string;
@@ -51,8 +54,8 @@ export class Content {
   @Prop({
     default: 'draft',
     enum: {
-      values: ['draft', 'published', 'archived'],
-      message: '{VALUE} is not a valid status',
+      values: contentStatuses,
+      message: `{VALUE} is not a valid status. Status must be one of the following values: ${contentStatuses.join(', ')}`,
     },
   })
   status: string;

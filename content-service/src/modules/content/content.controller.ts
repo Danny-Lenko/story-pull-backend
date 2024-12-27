@@ -45,7 +45,7 @@ export class ContentController {
   }
 
   @MessagePattern({ cmd: 'updateContent' })
-  @UsePipes(new ValidationPipe())
+  // @UsePipes(new ValidationPipe())
   @Auth()
   update(@Payload() { id, data }: { id: string; data: UpdateContentDto }) {
     this.logger.log(`Updating content with ID: ${id}`);

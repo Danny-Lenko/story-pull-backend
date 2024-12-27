@@ -50,6 +50,7 @@ export class ContentController {
     @Headers('authorization') token: string,
   ): Observable<unknown> {
     console.log('CONTENT ID:', id);
+    console.log('UPDATE DTO:', updateDto);
     return this.contentClient
       .send({ cmd: 'updateContent' }, { id, data: updateDto, metadata: { authorization: token } })
       .pipe(handleRpcError());
