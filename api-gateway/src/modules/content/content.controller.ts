@@ -1,9 +1,9 @@
 import { Body, Controller, Inject, Post, Headers, Get, Query, Param, Put } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
+import { UpdateContentDto, QueryContentDto } from '@story-pull/types';
+
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
-import { QueryContentDto } from './dto/query-content.dto';
-import { UpdateContentDto } from '@story-pull/types';
 
 @Controller('api/content')
 export class ContentController {
