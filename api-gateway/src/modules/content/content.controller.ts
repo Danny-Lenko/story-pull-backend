@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
 import { QueryContentDto } from './dto/query-content.dto';
+import { UpdateContentDto } from '@story-pull/types';
 
 @Controller('api/content')
 export class ContentController {
@@ -46,7 +47,7 @@ export class ContentController {
   @Put(':id')
   updateContent(
     @Param('id') id: string,
-    @Body() updateDto: unknown,
+    @Body() updateDto: UpdateContentDto,
     @Headers('authorization') token: string,
   ): Observable<unknown> {
     console.log('CONTENT ID:', id);

@@ -1,8 +1,16 @@
 {
   "name": "@story-pull/types",
-  "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.0.4",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./content": "./dist/content/index.js",
+    "./user": "./dist/user/index.js"
+  },
+  "files": [
+    "dist/*"
+  ],
   "publishConfig": {
     "access": "public"
   },

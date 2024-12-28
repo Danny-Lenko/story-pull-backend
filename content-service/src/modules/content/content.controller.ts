@@ -7,7 +7,6 @@ import { transformToRpcException } from '../../utils/operators/rpc-transformer.o
 import { Auth } from '../../shared/decorators/auth.decorator';
 import { ValidationPipe } from '../../shared/pipes/validation.pipe';
 import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
-import { QueryValidationPipe } from '../../shared/filters/query-validation.filter';
 import { UpdateContentDto } from './dto/update-content.dto';
 
 @Controller('content')
@@ -29,7 +28,6 @@ export class ContentController {
   }
 
   @MessagePattern({ cmd: 'findAllContent' })
-  @UsePipes(new ValidationPipe(), new QueryValidationPipe())
   @Auth()
   findAll(@Payload('data') data: QueryContentDto) {
     this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
@@ -37,7 +35,6 @@ export class ContentController {
   }
 
   @MessagePattern({ cmd: 'findContentById' })
-  @UsePipes(new ValidationPipe())
   @Auth()
   findById(@Payload() data: { id: string }) {
     this.logger.log(`Finding content with ID: ${data.id}`);
@@ -45,7 +42,6 @@ export class ContentController {
   }
 
   @MessagePattern({ cmd: 'updateContent' })
-  // @UsePipes(new ValidationPipe())
   @Auth()
   update(@Payload() { id, data }: { id: string; data: UpdateContentDto }) {
     this.logger.log(`Updating content with ID: ${id}`);

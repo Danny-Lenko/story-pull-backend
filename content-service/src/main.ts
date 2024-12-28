@@ -4,16 +4,15 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module';
-// import { ValidationPipe } from './shared/pipes/validation.pipe';
 
-// import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Main');
 
-  // app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe());
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.TCP,

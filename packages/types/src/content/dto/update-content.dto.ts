@@ -7,7 +7,11 @@ import {
   IsNotEmpty,
   MinLength,
   Matches,
+  ValidationArguments,
 } from 'class-validator';
+
+const contentTypes = ['article', 'page', 'blog_post'] as const;
+const contentStatuses = ['draft', 'published', 'archived'] as const;
 
 export class UpdateContentDto {
   @IsOptional()
@@ -26,12 +30,16 @@ export class UpdateContentDto {
   body?: string;
 
   @IsOptional()
-  @IsEnum(['draft', 'published', 'archived'])
+  @IsEnum(contentStatuses, {
+    message: (args: ValidationArguments) =>
+      `${args.value} is not a valid status. Status must be one of the following values: ${contentStatuses.join(', ')}`,
+  })
   status?: string;
 
   @IsOptional()
-  @IsEnum(['article', 'page', 'blog_post'], {
-    message: 'Type must be one of the following values: article, page, blog_post',
+  @IsEnum(contentTypes, {
+    message: (args: ValidationArguments) =>
+      `${args.value} is not a valid type. Type must be one of the following values: ${contentTypes.join(', ')}`,
   })
   type?: string;
 
