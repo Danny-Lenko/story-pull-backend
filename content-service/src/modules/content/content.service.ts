@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Content, ContentDocument } from '../../models/content.model';
-import { CreateContentDto } from './dto/create-content.dto';
-import { QueryContentDto } from './dto/query-content.dto';
 import { from, Observable, throwError } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
+import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull/types';
+
+import { Content, ContentDocument } from '../../models/content.model';
 import { ApiResponse } from './interfaces/api-response.interface';
-import { UpdateContentDto } from './dto/update-content.dto';
 
 @Injectable()
 export class ContentService {
@@ -178,7 +177,7 @@ export class ContentService {
     );
   }
 
-  // Add more methods as needed
+  // ==================== Add more methods as needed
 
   async findAll(): Promise<Content[]> {
     return this.contentModel.find().exec();

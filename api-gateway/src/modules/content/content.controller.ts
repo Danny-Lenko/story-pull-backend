@@ -5,8 +5,6 @@ import { CreateContentDto, UpdateContentDto, QueryContentDto } from '@story-pull
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
 
-// ================= TODO: add tests for the gateway controller
-
 @Controller('api/content')
 export class ContentController {
   constructor(@Inject('CONTENT_SERVICE') private readonly contentClient: ClientProxy) {}

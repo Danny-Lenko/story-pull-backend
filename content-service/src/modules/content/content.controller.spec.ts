@@ -2,10 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContentController } from './content.controller';
 import { ContentService } from './content.service';
 import { RpcException } from '@nestjs/microservices';
-import { CreateContentDto } from './dto/create-content.dto';
 import { Content } from '../../models/content.model';
 import { of, throwError } from 'rxjs';
 import { Logger, NotFoundException } from '@nestjs/common';
+import { CreateContentDto } from '@story-pull/types';
 
 describe('ContentController', () => {
   let controller: ContentController;

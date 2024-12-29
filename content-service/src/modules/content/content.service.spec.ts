@@ -2,11 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContentService } from './content.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Content, ContentDocument } from '../../models/content.model';
-import { CreateContentDto } from './dto/create-content.dto';
 import { lastValueFrom } from 'rxjs';
 import { Model } from 'mongoose';
-import { NotFoundException } from '@nestjs/common';
-import { QueryContentDto } from './dto/query-content.dto';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull/types';
 
 describe('ContentService', () => {
   let service: ContentService;
@@ -423,6 +422,149 @@ describe('ContentService', () => {
           done();
         },
         error: done,
+      });
+    });
+  });
+
+  describe('update', () => {
+    let service: ContentService;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let model: Model<ContentDocument>;
+
+    const mockContentModel = {
+      findById: jest.fn(),
+      findByIdAndUpdate: jest.fn(),
+    };
+
+    const mockContent = {
+      _id: '507f1f77bcf86cd799439011',
+      title: 'Existing Content',
+      body: 'Existing Body',
+      type: 'article',
+      author: 'Test Author',
+      status: 'draft',
+      publishedAt: null,
+      updatedAt: new Date(),
+    };
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ContentService,
+          {
+            provide: getModelToken(Content.name),
+            useValue: mockContentModel,
+          },
+        ],
+      }).compile();
+
+      service = module.get<ContentService>(ContentService);
+      model = module.get<Model<ContentDocument>>(getModelToken(Content.name));
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should update an existing content item and return the updated content', (done) => {
+      const updateDto: UpdateContentDto = { title: 'Updated Title', status: 'published' };
+      const updatedContent = { ...mockContent, ...updateDto, publishedAt: expect.any(Date) };
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockContent),
+      });
+
+      mockContentModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(updatedContent),
+      });
+
+      service.update(mockContent._id, updateDto).subscribe({
+        next: (result) => {
+          expect(result).toEqual(updatedContent);
+          expect(mockContentModel.findById).toHaveBeenCalledWith(mockContent._id);
+          expect(mockContentModel.findByIdAndUpdate).toHaveBeenCalledWith(
+            mockContent._id,
+            { $set: expect.objectContaining({ ...updateDto, updatedAt: expect.any(Date) }) },
+            { new: true, runValidators: true },
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('should throw NotFoundException if the content does not exist', (done) => {
+      const updateDto: UpdateContentDto = { title: 'Updated Title' };
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      service.update(mockContent._id, updateDto).subscribe({
+        error: (error) => {
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.message).toBe(`Content with ID "${mockContent._id}" not found`);
+          done();
+        },
+      });
+    });
+
+    it('should throw BadRequestException on validation errors', (done) => {
+      const updateDto: UpdateContentDto = { title: '' }; // Invalid title
+      const validationError = { name: 'ValidationError', message: 'Validation failed' };
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockContent),
+      });
+
+      mockContentModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(validationError),
+      });
+
+      service.update(mockContent._id, updateDto).subscribe({
+        error: (error) => {
+          expect(error).toBeInstanceOf(BadRequestException);
+          expect(error.message).toBe('Validation failed');
+          done();
+        },
+      });
+    });
+
+    it('should throw NotFoundException on invalid ID format', (done) => {
+      const updateDto: UpdateContentDto = { title: 'Updated Title' };
+      const castError = { name: 'CastError' };
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(castError),
+      });
+
+      service.update('invalid-id', updateDto).subscribe({
+        error: (error) => {
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.message).toBe('Invalid content ID format');
+          done();
+        },
+      });
+    });
+
+    it('should propagate unexpected errors', (done) => {
+      const updateDto: UpdateContentDto = { title: 'Updated Title' };
+      const unexpectedError = new Error('Unexpected error');
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockContent),
+      });
+
+      mockContentModel.findByIdAndUpdate.mockReturnValue({
+        exec: jest.fn().mockRejectedValue(unexpectedError),
+      });
+
+      service.update(mockContent._id, updateDto).subscribe({
+        error: (error) => {
+          expect(error).toBe(unexpectedError);
+          expect(error.message).toBe('Unexpected error');
+          done();
+        },
       });
     });
   });
