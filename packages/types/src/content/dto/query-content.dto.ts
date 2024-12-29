@@ -9,10 +9,12 @@ import {
   IsArray,
   IsDate,
   MaxLength,
+  ValidationArguments,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { IsDateRangeValid } from '../utils';
+import { contentStatuses, contentTypes } from './base.dto';
 
 export class QueryContentDto {
   @IsOptional()
@@ -29,14 +31,15 @@ export class QueryContentDto {
   limit?: number = 10;
 
   @IsOptional()
-  @IsEnum(['article', 'page', 'blog_post'], {
-    message: 'Type must be one of: article, page, blog_post',
+  @IsEnum(contentTypes, {
+    message: (args: ValidationArguments) =>
+      `${args.value} is not a valid type. Type must be one of: ${contentTypes.join(', ')}`,
   })
   type?: string;
 
   @IsOptional()
   @IsArray()
-  @IsEnum(['draft', 'published', 'archived'], {
+  @IsEnum(contentStatuses, {
     each: true,
     message: 'Each status must be one of: draft, published, archived',
   })

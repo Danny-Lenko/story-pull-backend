@@ -1,9 +1,11 @@
 import { Body, Controller, Inject, Post, Headers, Get, Query, Param, Put } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { UpdateContentDto, QueryContentDto } from '@story-pull/types';
+import { CreateContentDto, UpdateContentDto, QueryContentDto } from '@story-pull/types';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
+
+// ================= TODO: add tests for the gateway controller
 
 @Controller('api/content')
 export class ContentController {
@@ -11,7 +13,7 @@ export class ContentController {
 
   @Post('create-content')
   register(
-    @Body() registerDto: unknown,
+    @Body() registerDto: CreateContentDto,
     @Headers('authorization') token: string,
   ): Observable<unknown> {
     return this.contentClient
