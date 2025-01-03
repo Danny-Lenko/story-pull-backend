@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy, Transport, ClientProxyFactory } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { CreateContentDto } from './src/modules/content/dto/create-content.dto';
+import { CreateContentDto } from '@story-pull/types';
 
 @Injectable()
 export class ContentTestClient {
