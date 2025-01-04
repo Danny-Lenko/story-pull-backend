@@ -1,4 +1,15 @@
-import { Body, Controller, Inject, Post, Headers, Get, Query, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Inject,
+  Post,
+  Headers,
+  Get,
+  Query,
+  Param,
+  Put,
+  Patch,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { CreateContentDto, UpdateContentDto, QueryContentDto } from '@story-pull/types';
@@ -52,8 +63,23 @@ export class ContentController {
   ): Observable<unknown> {
     console.log('CONTENT ID:', id);
     console.log('UPDATE DTO:', updateDto);
+
     return this.contentClient
       .send({ cmd: 'updateContent' }, { id, data: updateDto, metadata: { authorization: token } })
+      .pipe(handleRpcError());
+  }
+
+  @Patch(':id/type')
+  updateType(
+    @Param('id') id: string,
+    @Body('type') type: string,
+    @Headers('authorization') token: string,
+  ): Observable<unknown> {
+    console.log('CONTENT ID:', id);
+    console.log('UPDATE TYPE:', type);
+
+    return this.contentClient
+      .send({ cmd: 'updateType' }, { id, data: { type }, metadata: { authorization: token } })
       .pipe(handleRpcError());
   }
 }

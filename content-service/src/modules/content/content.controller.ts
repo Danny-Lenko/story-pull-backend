@@ -44,4 +44,11 @@ export class ContentController {
     this.logger.log(`Updating content with ID: ${id}`);
     return this.contentService.update(id, data).pipe(transformToRpcException());
   }
+
+  @MessagePattern({ cmd: 'updateType' })
+  @Auth()
+  updateType(@Payload() { id, data }: { id: string; data: { type: string } }) {
+    this.logger.log(`Updating content type with ID: ${id}`);
+    return this.contentService.update(id, data).pipe(transformToRpcException());
+  }
 }
