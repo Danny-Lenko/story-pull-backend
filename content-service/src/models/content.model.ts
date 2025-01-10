@@ -52,6 +52,12 @@ export class Content {
   author: string;
 
   @Prop({
+    required: [true, 'Author ID is required'],
+    trim: true,
+  })
+  authorId: string;
+
+  @Prop({
     default: 'draft',
     enum: {
       values: contentStatuses,

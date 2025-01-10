@@ -3,83 +3,87 @@ import {
   Controller,
   Inject,
   Post,
-  Headers,
   Get,
   Query,
   Param,
   Put,
   Patch,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { CreateContentDto, UpdateContentDto, QueryContentDto } from '@story-pull/types';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
+import { JwtAuthGuard } from 'src/shared/guards/jwt.auth.guard';
 
 @Controller('api/content')
 export class ContentController {
   constructor(@Inject('CONTENT_SERVICE') private readonly contentClient: ClientProxy) {}
 
   @Post('create-content')
-  register(
-    @Body() registerDto: CreateContentDto,
-    @Headers('authorization') token: string,
-  ): Observable<unknown> {
+  @UseGuards(JwtAuthGuard)
+  register(@Body() registerDto: CreateContentDto, @Req() req): Observable<unknown> {
+    console.log('USER:', req.user);
     return this.contentClient
-      .send({ cmd: 'createContent' }, { data: registerDto, metadata: { authorization: token } })
+      .send(
+        { cmd: 'createContent' },
+        {
+          data: registerDto,
+          user: req.user, // Pass the authenticated user from JwtAuthGuard
+        },
+      )
       .pipe(handleRpcError());
   }
 
   @Get()
-  getPaginatedContent(
-    @Query() queryContentDto: QueryContentDto,
-    @Headers('authorization') token: string,
-  ): Observable<unknown> {
+  @UseGuards(JwtAuthGuard)
+  getPaginatedContent(@Query() queryContentDto: QueryContentDto, @Req() req): Observable<unknown> {
     return this.contentClient
       .send(
         { cmd: 'findAllContent' },
-        { data: queryContentDto, metadata: { authorization: token } },
+        {
+          data: queryContentDto,
+          user: req.user,
+        },
       )
       .pipe(handleRpcError());
   }
 
   @Get(':id')
-  getContentById(
-    @Param('id') id: string,
-    @Headers('authorization') token: string,
-  ): Observable<unknown> {
+  @UseGuards(JwtAuthGuard)
+  getContentById(@Param('id') id: string, @Req() req): Observable<unknown> {
     console.log('CONTENT ID:', id);
 
     return this.contentClient
-      .send({ cmd: 'findContentById' }, { id, metadata: { authorization: token } })
+      .send({ cmd: 'findContentById' }, { id, user: req.user })
       .pipe(handleRpcError());
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard)
   updateContent(
     @Param('id') id: string,
     @Body() updateDto: UpdateContentDto,
-    @Headers('authorization') token: string,
+    @Req() req,
   ): Observable<unknown> {
     console.log('CONTENT ID:', id);
     console.log('UPDATE DTO:', updateDto);
 
     return this.contentClient
-      .send({ cmd: 'updateContent' }, { id, data: updateDto, metadata: { authorization: token } })
+      .send({ cmd: 'updateContent' }, { id, data: updateDto, user: req.user })
       .pipe(handleRpcError());
   }
 
   @Patch(':id/type')
-  updateType(
-    @Param('id') id: string,
-    @Body('type') type: string,
-    @Headers('authorization') token: string,
-  ): Observable<unknown> {
+  @UseGuards(JwtAuthGuard)
+  updateType(@Param('id') id: string, @Body('type') type: string, @Req() req): Observable<unknown> {
     console.log('CONTENT ID:', id);
     console.log('UPDATE TYPE:', type);
 
     return this.contentClient
-      .send({ cmd: 'updateType' }, { id, data: { type }, metadata: { authorization: token } })
+      .send({ cmd: 'updateType' }, { id, data: { type }, user: req.user })
       .pipe(handleRpcError());
   }
 }

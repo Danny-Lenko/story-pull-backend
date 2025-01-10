@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { from, Observable, throwError } from 'rxjs';
@@ -7,26 +12,48 @@ import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull
 
 import { Content, ContentDocument } from '../../models/content.model';
 import { ApiResponse } from './interfaces/api-response.interface';
+import { SupabaseUser } from './interfaces/supabase';
 
 @Injectable()
 export class ContentService {
   constructor(@InjectModel(Content.name) private contentModel: Model<ContentDocument>) {}
 
-  create(createContentDto: CreateContentDto): Observable<Content> {
+  create({
+    createContentDto,
+    user,
+  }: {
+    createContentDto: CreateContentDto;
+    user: SupabaseUser;
+  }): Observable<Content> {
+    console.log('Creating content with user:', user.sub);
+
     return from(
       this.contentModel.create({
         ...createContentDto,
+        authorId: user.sub,
         status: createContentDto.status || 'draft',
         publishedAt: createContentDto.status === 'published' ? new Date() : null,
       }),
     );
   }
 
-  findAllPaginated(query: QueryContentDto): Observable<ApiResponse<Content[]>> {
-    return from(this.findAllPaginatedInternal(query));
+  findAllPaginated({
+    query,
+    user,
+  }: {
+    query: QueryContentDto;
+    user: SupabaseUser;
+  }): Observable<ApiResponse<Content[]>> {
+    return from(this.findAllPaginatedInternal({ query, user }));
   }
 
-  private async findAllPaginatedInternal(query: QueryContentDto): Promise<ApiResponse<Content[]>> {
+  private async findAllPaginatedInternal({
+    query,
+    user,
+  }: {
+    query: QueryContentDto;
+    user: SupabaseUser;
+  }): Promise<ApiResponse<Content[]>> {
     try {
       const {
         page = 1,
@@ -44,6 +71,11 @@ export class ContentService {
       // Build filter conditions
       const filter: Record<string, unknown> = {};
       const appliedFilters: string[] = [];
+
+      filter.$or = [
+        { authorId: user.sub },
+        // { status: 'published' }
+      ];
 
       // Text search
       if (search) {
@@ -121,12 +153,18 @@ export class ContentService {
     }
   }
 
-  findById(id: string): Observable<Content> {
+  findById({ id, user }: { id: string; user: SupabaseUser }): Observable<Content> {
     return from(this.contentModel.findById(id).exec()).pipe(
       map((content) => {
         if (!content) {
           throw new NotFoundException(`Content with ID "${id}" not found`);
         }
+
+        // Check if user has access to this content
+        if (content.authorId !== user.sub && content.status !== 'published') {
+          throw new ForbiddenException('You do not have access to this content');
+        }
+
         return content;
       }),
       catchError((error) => {
@@ -138,9 +176,17 @@ export class ContentService {
     );
   }
 
-  update(id: string, updateContentDto: UpdateContentDto): Observable<Content> {
+  update({
+    id,
+    updateContentDto,
+    user,
+  }: {
+    id: string;
+    updateContentDto: UpdateContentDto;
+    user: SupabaseUser;
+  }): Observable<Content> {
     return from(
-      this.findById(id).pipe(
+      this.findById({ id, user }).pipe(
         switchMap((existingContent) => {
           // If content is being published, set publishedAt
           const updates = {
