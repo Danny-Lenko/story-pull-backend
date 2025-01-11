@@ -14,17 +14,6 @@ import { AuthModule } from './modules/auth/auth.module';
       load: [configuration],
     }),
     ClientsModule.registerAsync([
-      // {
-      //   name: 'AUTH_SERVICE',
-      //   useFactory: (configService: ConfigService) => ({
-      //     transport: Transport.TCP,
-      //     options: {
-      //       host: configService.get('AUTH_SERVICE_HOST'),
-      //       port: configService.get('AUTH_SERVICE_PORT'),
-      //     },
-      //   }),
-      //   inject: [ConfigService],
-      // },
       {
         name: 'CONTENT_SERVICE',
         useFactory: (configService: ConfigService) => ({

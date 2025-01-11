@@ -12,7 +12,6 @@ import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull
 
 import { Content, ContentDocument } from '../../models/content.model';
 import { ApiResponse } from './interfaces/api-response.interface';
-import { SupabaseUser } from './interfaces/supabase';
 
 @Injectable()
 export class ContentService {
@@ -20,17 +19,17 @@ export class ContentService {
 
   create({
     createContentDto,
-    user,
+    userId,
   }: {
     createContentDto: CreateContentDto;
-    user: SupabaseUser;
+    userId: string;
   }): Observable<Content> {
-    console.log('Creating content with user:', user.sub);
+    console.log('Creating content with user:', userId);
 
     return from(
       this.contentModel.create({
         ...createContentDto,
-        authorId: user.sub,
+        authorId: userId,
         status: createContentDto.status || 'draft',
         publishedAt: createContentDto.status === 'published' ? new Date() : null,
       }),
@@ -39,20 +38,20 @@ export class ContentService {
 
   findAllPaginated({
     query,
-    user,
+    userId,
   }: {
     query: QueryContentDto;
-    user: SupabaseUser;
+    userId: string;
   }): Observable<ApiResponse<Content[]>> {
-    return from(this.findAllPaginatedInternal({ query, user }));
+    return from(this.findAllPaginatedInternal({ query, userId }));
   }
 
   private async findAllPaginatedInternal({
     query,
-    user,
+    userId,
   }: {
     query: QueryContentDto;
-    user: SupabaseUser;
+    userId: string;
   }): Promise<ApiResponse<Content[]>> {
     try {
       const {
@@ -73,7 +72,7 @@ export class ContentService {
       const appliedFilters: string[] = [];
 
       filter.$or = [
-        { authorId: user.sub },
+        { authorId: userId },
         // { status: 'published' }
       ];
 
@@ -153,7 +152,7 @@ export class ContentService {
     }
   }
 
-  findById({ id, user }: { id: string; user: SupabaseUser }): Observable<Content> {
+  findById({ id, userId }: { id: string; userId: string }): Observable<Content> {
     return from(this.contentModel.findById(id).exec()).pipe(
       map((content) => {
         if (!content) {
@@ -161,7 +160,7 @@ export class ContentService {
         }
 
         // Check if user has access to this content
-        if (content.authorId !== user.sub && content.status !== 'published') {
+        if (content.authorId !== userId && content.status !== 'published') {
           throw new ForbiddenException('You do not have access to this content');
         }
 
@@ -179,14 +178,14 @@ export class ContentService {
   update({
     id,
     updateContentDto,
-    user,
+    userId,
   }: {
     id: string;
     updateContentDto: UpdateContentDto;
-    user: SupabaseUser;
+    userId: string;
   }): Observable<Content> {
     return from(
-      this.findById({ id, user }).pipe(
+      this.findById({ id, userId }).pipe(
         switchMap((existingContent) => {
           // If content is being published, set publishedAt
           const updates = {
