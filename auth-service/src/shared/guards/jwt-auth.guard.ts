@@ -12,13 +12,16 @@ export class JwtAuthGuard implements CanActivate {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
-  //   async canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const rpcContext = context.switchToRpc();
     const data = rpcContext.getData();
 
     if (!data.token) {
-      throw new RpcException('No token provided');
+      throw new RpcException({
+        name: 'JsonWebTokenError',
+        message: 'No token provided',
+        status: 401,
+      });
     }
 
     try {
@@ -26,8 +29,14 @@ export class JwtAuthGuard implements CanActivate {
       const isBlacklisted = await this.redis.get(`blacklist:${data.token}`);
       console.log('IS BLACKLISTED', isBlacklisted);
       if (isBlacklisted) {
-        throw new RpcException({ message: 'Token is blacklisted', code: 'TOKEN_BLACKLISTED' });
+        throw new RpcException({
+          name: 'JsonWebTokenError',
+          message: 'token blacklisted',
+          status: 401,
+        });
       }
+
+      console.log('Token:', data.token);
 
       const payload = this.jwtService.verify(data.token);
 
@@ -39,16 +48,20 @@ export class JwtAuthGuard implements CanActivate {
       if (error instanceof RpcException) {
         throw error; // Re-throw RpcExceptions (including our blacklist exception)
       } else if (error instanceof TokenExpiredError) {
-        throw new RpcException({ message: 'Token has expired', code: 'TOKEN_EXPIRED' });
+        // throw new RpcException({ message: 'Token has expired', code: 'TOKEN_EXPIRED' });
+        throw new RpcException({ ...error, status: 401 });
       } else if (error instanceof JsonWebTokenError) {
-        throw new RpcException({ message: 'Invalid token', code: 'INVALID_TOKEN' });
+        // throw new RpcException({ message: 'Invalid token', code: 'INVALID_TOKEN' });
+        throw new RpcException({ ...error, status: 401 });
       } else if (error instanceof NotBeforeError) {
-        throw new RpcException({ message: 'Token not yet active', code: 'TOKEN_NOT_ACTIVE' });
+        // throw new RpcException({ message: 'Token not yet active', code: 'TOKEN_NOT_ACTIVE' });
+        throw new RpcException({ ...error, status: 401 });
       } else {
-        throw new RpcException({
-          message: 'Token validation failed',
-          code: 'TOKEN_VALIDATION_FAILED',
-        });
+        // throw new RpcException({
+        //   message: 'Token validation failed',
+        //   code: 'TOKEN_VALIDATION_FAILED',
+        // });
+        throw new RpcException({ ...error, message: 'token validation failed', status: 401 });
       }
     }
   }

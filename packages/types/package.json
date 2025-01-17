@@ -1,0 +1,28 @@
+{
+  "name": "@story-pull/types",
+  "version": "1.1.9",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./content": "./dist/content/index.js",
+    "./user": "./dist/user/index.js"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@nestjs/swagger": "^8.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

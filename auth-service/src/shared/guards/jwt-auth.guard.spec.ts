@@ -89,14 +89,16 @@ describe('JwtAuthGuard', () => {
       });
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(RpcException);
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Token has expired');
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('jwt expired');
       try {
         await guard.canActivate(mockContext);
       } catch (error) {
         expect(error).toBeInstanceOf(RpcException);
         expect(error.getError()).toEqual({
-          message: 'Token has expired',
-          code: 'TOKEN_EXPIRED',
+          message: 'jwt expired',
+          expiredAt: expect.any(Date),
+          name: 'TokenExpiredError',
+          status: 401,
         });
       }
     });
@@ -115,14 +117,15 @@ describe('JwtAuthGuard', () => {
       });
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(RpcException);
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Invalid token');
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('invalid token');
       try {
         await guard.canActivate(mockContext);
       } catch (error) {
         expect(error).toBeInstanceOf(RpcException);
         expect(error.getError()).toEqual({
-          message: 'Invalid token',
-          code: 'INVALID_TOKEN',
+          message: 'invalid token',
+          name: 'JsonWebTokenError',
+          status: 401,
         });
       }
     });
@@ -135,14 +138,14 @@ describe('JwtAuthGuard', () => {
       });
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(RpcException);
-      await expect(guard.canActivate(mockContext)).rejects.toThrow('Token validation failed');
+      await expect(guard.canActivate(mockContext)).rejects.toThrow('token validation failed');
       try {
         await guard.canActivate(mockContext);
       } catch (error) {
         expect(error).toBeInstanceOf(RpcException);
         expect(error.getError()).toEqual({
-          message: 'Token validation failed',
-          code: 'TOKEN_VALIDATION_FAILED',
+          message: 'token validation failed',
+          status: 401,
         });
       }
     });

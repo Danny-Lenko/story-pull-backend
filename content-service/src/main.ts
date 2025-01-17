@@ -4,12 +4,15 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module';
-import { ValidationPipe } from './shared/pipes/validation.pipe';
+
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Main');
+
+  app.useGlobalPipes(new ValidationPipe());
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.TCP,
@@ -18,8 +21,6 @@ async function bootstrap() {
       port: configService.get<number>('CONTENT_SERVICE_PORT'),
     },
   });
-
-  app.useGlobalPipes(new ValidationPipe());
 
   await app.startAllMicroservices();
   await app.listen(configService.get<number>('CONTENT_SERVICE_HTTP_PORT'));

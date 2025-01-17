@@ -20,6 +20,12 @@ export class RpcExceptionFilter implements NestRpcExceptionFilter<RpcException> 
 
     this.logger.error(`Exception caught: ${JSON.stringify(errorResponse)}`);
 
-    return throwError(() => errorResponse);
+    if (errorResponse instanceof Object && 'isRpcException' in errorResponse)
+      return throwError(() => errorResponse);
+
+    return throwError(() => ({
+      error: errorResponse,
+      isRpcException: true,
+    }));
   }
 }
