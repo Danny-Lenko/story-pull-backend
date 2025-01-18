@@ -10,9 +10,12 @@ export default () => ({
   CONTENT_SERVICE_PORT: parseInt(process.env.CONTENT_SERVICE_PORT, 10) || 4002,
   CONTENT_SERVICE_URL: process.env.CONTENT_SERVICE_URL || 'http://localhost:4002',
 
-  USER_SERVICE_URL: process.env.USER_SERVICE_URL || 'http://localhost:4003',
+  MEDIA_SERVICE_HOST: process.env.MEDIA_SERVICE_HOST || 'localhost',
+  MEDIA_SERVICE_PORT: parseInt(process.env.MEDIA_SERVICE_PORT, 10) || 4003,
+  MEDIA_SERVICE_URL: process.env.MEDIA_SERVICE_URL || 'http://localhost:4003',
+
   ANALYTICS_SERVICE_URL: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:4004',
-  MEDIA_SERVICE_URL: process.env.MEDIA_SERVICE_URL || 'http://localhost:4005',
+  USER_SERVICE_URL: process.env.USER_SERVICE_URL || 'http://localhost:4005',
   SEARCH_SERVICE_URL: process.env.SEARCH_SERVICE_URL || 'http://localhost:4006',
 
   MONGODB_URI: process.env.MONGODB_URI,
