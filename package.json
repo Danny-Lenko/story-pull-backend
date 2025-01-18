@@ -24,9 +24,11 @@
   },
   "dependencies": {
     "@types/jest": "^29.5.13",
+    "@types/mime-types": "^2.1.4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "http-proxy-middleware": "^3.0.2",
+    "mime-types": "^2.1.35",
     "pg": "^8.13.0",
     "typescript": "^5.7.2"
   }

@@ -6,12 +6,16 @@ import {
   UseInterceptors,
   UploadedFile,
   Param,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { createReadStream } from 'fs';
+import { Response } from 'express';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('api/media')
 export class MediaController {
@@ -27,13 +31,29 @@ export class MediaController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   uploadFile(@UploadedFile() file: Express.Multer.File): Observable<unknown> {
-    console.log('MediaController.uploadFile()');
     console.log('file', file);
     return this.mediaService.send({ cmd: 'uploadFile' }, { file }).pipe(handleRpcError());
   }
 
   @Get(':filename')
-  getFile(@Param('filename') filename: string): Observable<unknown> {
-    return this.mediaService.send({ cmd: 'getFile' }, filename).pipe(handleRpcError());
+  async getFile(
+    @Param('filename') filename: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await firstValueFrom(
+      this.mediaService.send({ cmd: 'getFile' }, filename).pipe(handleRpcError()),
+    );
+
+    if (!result?.filePath || !result?.mimeType) {
+      throw new Error('File not found');
+    }
+
+    const file = createReadStream(result.filePath);
+    response.set({
+      'Content-Type': result.mimeType,
+      'Content-Disposition': `inline; filename="${filename}"`,
+    });
+
+    return new StreamableFile(file);
   }
 }

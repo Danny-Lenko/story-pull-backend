@@ -13,7 +13,7 @@ export class StorageService {
   private readonly uploadDir: string;
 
   constructor(private configService: ConfigService) {
-    this.uploadDir = this.configService.get<string>('storage.local.uploadDir') || './uploads';
+    this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
     this.initializeStorage();
   }
 

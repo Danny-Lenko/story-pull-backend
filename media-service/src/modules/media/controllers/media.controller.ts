@@ -1,6 +1,8 @@
 import { BadRequestException, Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { StorageService } from '../services/storage.service';
+import * as fs from 'fs';
+import * as mimeTypes from 'mime-types';
 
 @Controller()
 export class MediaController {
@@ -8,13 +10,11 @@ export class MediaController {
 
   @MessagePattern({ cmd: 'getHello' })
   getHello() {
-    console.log('MediaController.getHello()');
     return 'Hello from Media Service!';
   }
 
   @MessagePattern({ cmd: 'uploadFile' })
   async uploadFile(data: { file: Express.Multer.File }) {
-    console.log('DATA:', data);
     try {
       const filename = await this.storageService.saveFile(data.file);
       return { filename };
@@ -28,7 +28,23 @@ export class MediaController {
   async getFile(filename: string) {
     try {
       const filePath = this.storageService.getFilePath(filename);
-      return { filePath };
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        throw new BadRequestException('File not found');
+      }
+
+      if (fs.existsSync(filePath)) {
+        console.log('File exists');
+      }
+
+      // Get mime type
+      const mimeType = mimeTypes.lookup(filename) || 'application/octet-stream';
+
+      return {
+        filePath,
+        mimeType,
+      };
     } catch (error) {
       console.error(error);
       throw new BadRequestException('File not found');
