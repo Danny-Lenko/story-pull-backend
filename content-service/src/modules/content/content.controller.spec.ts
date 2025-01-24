@@ -10,9 +10,7 @@ import { CreateContentDto } from '@story-pull/types';
 describe('ContentController', () => {
   let controller: ContentController;
   let contentService: ContentService;
-  // let authClient: ClientProxy;
   let mockContentService: jest.Mocked<Partial<ContentService>>;
-  let mockAuthClient: jest.Mocked<{ send: jest.Mock }>;
 
   beforeEach(async () => {
     mockContentService = {
@@ -21,21 +19,13 @@ describe('ContentController', () => {
       findById: jest.fn(),
     };
 
-    mockAuthClient = {
-      send: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ContentController],
-      providers: [
-        { provide: ContentService, useValue: mockContentService },
-        { provide: 'AUTH_SERVICE', useValue: mockAuthClient },
-      ],
+      providers: [{ provide: ContentService, useValue: mockContentService }],
     }).compile();
 
     controller = module.get<ContentController>(ContentController);
     contentService = module.get<ContentService>(ContentService);
-    // authClient = module.get<ClientProxy>('AUTH_SERVICE');
   });
 
   afterEach(() => {
@@ -58,14 +48,18 @@ describe('ContentController', () => {
       const expectedResult = {
         ...createContentDto,
         status: 'draft',
+        authorId: 'someUserId',
       };
 
       mockContentService.create.mockReturnValue(of(expectedResult));
 
-      controller.create(createContentDto).subscribe({
+      controller.create({ data: createContentDto, userId: 'someUserId' }).subscribe({
         next: (result) => {
           expect(result).toEqual(expectedResult);
-          expect(mockContentService.create).toHaveBeenCalledWith(createContentDto);
+          expect(mockContentService.create).toHaveBeenCalledWith({
+            createContentDto,
+            userId: 'someUserId',
+          });
           done();
         },
         error: done.fail,
@@ -76,11 +70,14 @@ describe('ContentController', () => {
       const error = new Error('Content creation failed');
       mockContentService.create.mockReturnValue(throwError(() => error));
 
-      controller.create(createContentDto).subscribe({
+      controller.create({ data: createContentDto, userId: 'someUserId' }).subscribe({
         next: () => done.fail('Should have thrown an error'),
         error: (err) => {
           expect(err).toBeInstanceOf(RpcException);
-          expect(mockContentService.create).toHaveBeenCalledWith(createContentDto);
+          expect(mockContentService.create).toHaveBeenCalledWith({
+            createContentDto,
+            userId: 'someUserId',
+          });
           done();
         },
       });
@@ -90,12 +87,13 @@ describe('ContentController', () => {
       const expectedResult: Content = {
         ...createContentDto,
         status: 'draft',
+        authorId: 'someUserId',
       };
 
       const logSpy = jest.spyOn(Logger.prototype, 'log');
       mockContentService.create.mockReturnValue(of(expectedResult));
 
-      controller.create(createContentDto).subscribe({
+      controller.create({ data: createContentDto, userId: 'someUserId' }).subscribe({
         next: () => {
           expect(logSpy).toHaveBeenCalledWith(
             `Creating new content: ${JSON.stringify(createContentDto)}`,
@@ -125,10 +123,13 @@ describe('ContentController', () => {
 
       mockContentService.findAllPaginated.mockReturnValue(of(expectedResult));
 
-      controller.findAll(queryContentDto).subscribe({
+      controller.findAll({ data: queryContentDto, userId: 'someUserId' }).subscribe({
         next: (result) => {
           expect(result).toEqual(expectedResult);
-          expect(mockContentService.findAllPaginated).toHaveBeenCalledWith(queryContentDto);
+          expect(mockContentService.findAllPaginated).toHaveBeenCalledWith({
+            query: queryContentDto,
+            userId: 'someUserId',
+          });
           done();
         },
         error: done.fail,
@@ -142,6 +143,7 @@ describe('ContentController', () => {
       title: 'Test Content',
       body: 'Test Body',
       type: 'article',
+      authorId: 'someUserId',
       author: 'Test Author',
       status: 'published',
     };
@@ -149,10 +151,13 @@ describe('ContentController', () => {
     it('should return content when valid ID is provided', (done) => {
       mockContentService.findById.mockReturnValue(of(mockContent));
 
-      controller.findById({ id: mockContent.id }).subscribe({
+      controller.findById({ id: mockContent.id, userId: 'someUserId' }).subscribe({
         next: (content) => {
           expect(content).toEqual(mockContent);
-          expect(contentService.findById).toHaveBeenCalledWith(mockContent.id);
+          expect(contentService.findById).toHaveBeenCalledWith({
+            id: mockContent.id,
+            userId: 'someUserId',
+          });
           done();
         },
         error: done,
@@ -164,7 +169,7 @@ describe('ContentController', () => {
         throwError(() => new NotFoundException(`Content with ID "invalid-id" not found`)),
       );
 
-      controller.findById({ id: 'invalid-id' }).subscribe({
+      controller.findById({ id: 'invalid-id', userId: 'someUserId' }).subscribe({
         error: (error) => {
           expect(error).toBeInstanceOf(RpcException);
           expect(error.message).toBe('Content with ID "invalid-id" not found');

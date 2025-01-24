@@ -4,7 +4,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Content, ContentDocument } from '../../models/content.model';
 import { lastValueFrom } from 'rxjs';
 import { Model } from 'mongoose';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull/types';
 
 describe('ContentService', () => {
@@ -17,6 +17,7 @@ describe('ContentService', () => {
     body: 'Test Body',
     type: 'article',
     author: 'Test Author',
+    authorId: 'someUserId',
     status: 'published',
   };
 
@@ -79,13 +80,16 @@ describe('ContentService', () => {
 
       mockContentModel.create.mockResolvedValue(createdContent);
 
-      const result = await lastValueFrom(service.create(createContentDto));
+      const result = await lastValueFrom(
+        service.create({ createContentDto, userId: 'someUserId' }),
+      );
 
       expect(result).toEqual(createdContent);
       expect(mockContentModel.create).toHaveBeenCalledWith({
         ...createContentDto,
         status: 'draft',
         publishedAt: null,
+        authorId: 'someUserId',
       });
     });
 
@@ -105,12 +109,15 @@ describe('ContentService', () => {
 
       mockContentModel.create.mockResolvedValue(createdContent);
 
-      const result = await lastValueFrom(service.create(createContentDto));
+      const result = await lastValueFrom(
+        service.create({ createContentDto, userId: 'someUserId' }),
+      );
 
       expect(result).toEqual(createdContent);
       expect(mockContentModel.create).toHaveBeenCalledWith({
         ...createContentDto,
         publishedAt: expect.any(Date),
+        authorId: 'someUserId',
       });
     });
   });
@@ -170,7 +177,7 @@ describe('ContentService', () => {
         exec: jest.fn().mockResolvedValue(mockContent),
       });
 
-      service.findById(mockContent.id).subscribe({
+      service.findById({ id: mockContent.id, userId: 'someUserId' }).subscribe({
         next: (content) => {
           expect(content).toEqual(mockContent);
           expect(model.findById).toHaveBeenCalledWith(mockContent.id);
@@ -185,7 +192,7 @@ describe('ContentService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      service.findById('nonexistent-id').subscribe({
+      service.findById({ id: 'nonexistent-id', userId: 'someUserId' }).subscribe({
         error: (error) => {
           expect(error).toBeInstanceOf(NotFoundException);
           expect(error.message).toBe('Content with ID "nonexistent-id" not found');
@@ -199,7 +206,7 @@ describe('ContentService', () => {
         exec: jest.fn().mockRejectedValue({ name: 'CastError' }),
       });
 
-      service.findById('invalid-id').subscribe({
+      service.findById({ id: 'invalid-id', userId: 'someUserId' }).subscribe({
         error: (error) => {
           expect(error).toBeInstanceOf(NotFoundException);
           expect(error.message).toBe('Invalid content ID format');
@@ -214,7 +221,7 @@ describe('ContentService', () => {
         exec: jest.fn().mockRejectedValue(unexpectedError),
       });
 
-      service.findById(mockContent.id).subscribe({
+      service.findById({ id: mockContent.id, userId: 'someUserId' }).subscribe({
         error: (error) => {
           expect(error).toBe(unexpectedError);
           expect(error.message).toBe('Database connection failed');
@@ -233,7 +240,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: () => {
           expect(mockContentModel.find).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -254,7 +261,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         next: (result) => {
           expect(mockContentModel.find).toHaveBeenCalledWith(
@@ -279,7 +286,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: () => {
           expect(mockContentModel.find).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -300,7 +307,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: () => {
           expect(mockContentModel.find).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -326,7 +333,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: () => {
           expect(mockContentModel.find).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -363,7 +370,7 @@ describe('ContentService', () => {
       });
       mockContentModel.countDocuments.mockResolvedValue(15);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: (response) => {
           expect(response.meta.pagination).toEqual({
             total: 15,
@@ -385,7 +392,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: (response) => {
           expect(response.data).toEqual([]);
           expect(response.meta.pagination.total).toBe(0);
@@ -405,7 +412,7 @@ describe('ContentService', () => {
       mockExecFunction.mockResolvedValue([]);
       mockContentModel.countDocuments.mockResolvedValue(0);
 
-      service.findAllPaginated(query).subscribe({
+      service.findAllPaginated({ query, userId: 'someUserId' }).subscribe({
         next: (response) => {
           expect(response.meta.filter.applied).toContain('text_search');
           expect(response.meta.filter.applied).toContain('tags');
@@ -443,6 +450,7 @@ describe('ContentService', () => {
       type: 'article',
       author: 'Test Author',
       status: 'draft',
+      authorId: 'someUserId',
       publishedAt: null,
       updatedAt: new Date(),
     };
@@ -478,19 +486,44 @@ describe('ContentService', () => {
         exec: jest.fn().mockResolvedValue(updatedContent),
       });
 
-      service.update(mockContent._id, updateDto).subscribe({
-        next: (result) => {
-          expect(result).toEqual(updatedContent);
-          expect(mockContentModel.findById).toHaveBeenCalledWith(mockContent._id);
-          expect(mockContentModel.findByIdAndUpdate).toHaveBeenCalledWith(
-            mockContent._id,
-            { $set: expect.objectContaining({ ...updateDto, updatedAt: expect.any(Date) }) },
-            { new: true, runValidators: true },
-          );
-          done();
-        },
-        error: done,
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          next: (result) => {
+            expect(result).toEqual(updatedContent);
+            expect(mockContentModel.findById).toHaveBeenCalledWith(mockContent._id);
+            expect(mockContentModel.findByIdAndUpdate).toHaveBeenCalledWith(
+              mockContent._id,
+              { $set: expect.objectContaining({ ...updateDto, updatedAt: expect.any(Date) }) },
+              { new: true, runValidators: true },
+            );
+            done();
+          },
+          error: done,
+        });
+    });
+
+    it('should throw ForbiddenException when user does not have access', (done) => {
+      const updateDto: UpdateContentDto = { title: 'Updated Title', status: 'draft' };
+
+      mockContentModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          ...mockContent,
+          authorId: 'differentUserId', // Different user ID
+          status: 'draft',
+        }),
       });
+
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          next: () => done.fail('Should have thrown ForbiddenException'),
+          error: (error) => {
+            expect(error).toBeInstanceOf(ForbiddenException);
+            expect(error.message).toBe('You do not have access to this content');
+            done();
+          },
+        });
     });
 
     it('should throw NotFoundException if the content does not exist', (done) => {
@@ -500,13 +533,15 @@ describe('ContentService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      service.update(mockContent._id, updateDto).subscribe({
-        error: (error) => {
-          expect(error).toBeInstanceOf(NotFoundException);
-          expect(error.message).toBe(`Content with ID "${mockContent._id}" not found`);
-          done();
-        },
-      });
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          error: (error) => {
+            expect(error).toBeInstanceOf(NotFoundException);
+            expect(error.message).toBe(`Content with ID "${mockContent._id}" not found`);
+            done();
+          },
+        });
     });
 
     it('should throw BadRequestException on validation errors', (done) => {
@@ -521,13 +556,15 @@ describe('ContentService', () => {
         exec: jest.fn().mockRejectedValue(validationError),
       });
 
-      service.update(mockContent._id, updateDto).subscribe({
-        error: (error) => {
-          expect(error).toBeInstanceOf(BadRequestException);
-          expect(error.message).toBe('Validation failed');
-          done();
-        },
-      });
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          error: (error) => {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.message).toBe('Validation failed');
+            done();
+          },
+        });
     });
 
     it('should throw NotFoundException on invalid ID format', (done) => {
@@ -538,13 +575,15 @@ describe('ContentService', () => {
         exec: jest.fn().mockRejectedValue(castError),
       });
 
-      service.update('invalid-id', updateDto).subscribe({
-        error: (error) => {
-          expect(error).toBeInstanceOf(NotFoundException);
-          expect(error.message).toBe('Invalid content ID format');
-          done();
-        },
-      });
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          error: (error) => {
+            expect(error).toBeInstanceOf(NotFoundException);
+            expect(error.message).toBe('Invalid content ID format');
+            done();
+          },
+        });
     });
 
     it('should propagate unexpected errors', (done) => {
@@ -559,13 +598,15 @@ describe('ContentService', () => {
         exec: jest.fn().mockRejectedValue(unexpectedError),
       });
 
-      service.update(mockContent._id, updateDto).subscribe({
-        error: (error) => {
-          expect(error).toBe(unexpectedError);
-          expect(error.message).toBe('Unexpected error');
-          done();
-        },
-      });
+      service
+        .update({ id: mockContent._id, updateContentDto: updateDto, userId: 'someUserId' })
+        .subscribe({
+          error: (error) => {
+            expect(error).toBe(unexpectedError);
+            expect(error.message).toBe('Unexpected error');
+            done();
+          },
+        });
     });
   });
 });
