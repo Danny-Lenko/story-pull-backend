@@ -11,13 +11,8 @@ import { RpcExceptionFilter } from '../../../shared/filters/rpc-exception.filter
 export class MediaController {
   constructor(private readonly storageService: StorageService) {}
 
-  @MessagePattern({ cmd: 'getHello' })
-  getHello() {
-    return 'Hello from Media Service!';
-  }
-
   @MessagePattern({ cmd: 'uploadFile' })
-  async uploadFile(data: { file: Express.Multer.File }) {
+  uploadFile(data: { file: Express.Multer.File }) {
     return this.storageService.saveFile(data.file).pipe(
       map((filename) => ({ filename })),
       transformToRpcException(),
