@@ -21,6 +21,9 @@ export function transformToRpcException() {
         // Handle HTTP exceptions
         if (error instanceof HttpException) {
           const response = error.getResponse();
+
+          logger.debug('HTTP exception:', error);
+
           rpcResponse = {
             status: error.getStatus(),
             message: typeof response === 'string' ? response : response['message'],
@@ -30,24 +33,7 @@ export function transformToRpcException() {
           return throwError(() => new RpcException(rpcResponse));
         }
 
-        // Handle mongoose validation errors
-        if (error?.name === 'ValidationError' && error.errors) {
-          logger.debug('Mongoose validation error:', error);
-          const validationErrors = Object.values(error.errors).map(
-            (err: { path: string; message: string }) => ({
-              field: err.path,
-              message: err.message,
-            }),
-          );
-
-          rpcResponse = {
-            status: HttpStatus.BAD_REQUEST,
-            message: 'Validation failed',
-            error: 'Bad Request',
-            errors: validationErrors,
-          };
-          return throwError(() => new RpcException(rpcResponse));
-        }
+        // (Handle mongoose validation errors if applicable)
 
         // Hanle RPC exceptions
         if (error instanceof RpcException) return throwError(() => error);
