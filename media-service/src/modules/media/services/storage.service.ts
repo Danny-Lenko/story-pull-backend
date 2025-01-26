@@ -12,17 +12,25 @@ const writeFile = promisify(fs.writeFile);
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly uploadDir: string;
+  private readonly baseUploadDir: string;
 
   constructor(private configService: ConfigService) {
-    this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
+    this.baseUploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
     this.initializeStorage();
   }
 
   private async initializeStorage() {
     try {
-      await mkdir(this.uploadDir, { recursive: true });
-      this.logger.log(`Storage initialized at ${this.uploadDir}`);
+      // Create base upload directory
+      await mkdir(this.baseUploadDir, { recursive: true });
+
+      // Create subdirectories for each file type
+      const directories = ['images', 'documents', 'videos', 'audio'];
+      await Promise.all(
+        directories.map((dir) => mkdir(path.join(this.baseUploadDir, dir), { recursive: true })),
+      );
+
+      this.logger.log(`Storage initialized at ${this.baseUploadDir}`);
     } catch (error) {
       this.logger.error('Failed to initialize storage:', error);
       throw error;
@@ -31,7 +39,7 @@ export class StorageService {
 
   saveFile(file: Express.Multer.File): Observable<string> {
     const filename = `${Date.now()}-${file.originalname}`;
-    const filePath = path.join(this.uploadDir, filename);
+    const filePath = path.join(this.baseUploadDir, filename);
 
     // Convert promise to Observable
     return from(writeFile(filePath, this.getFileBuffer(file)).then(() => filename)).pipe(
@@ -60,6 +68,6 @@ export class StorageService {
   }
 
   private getFilePath(filename: string): string {
-    return path.join(this.uploadDir, filename);
+    return path.join(this.baseUploadDir, filename);
   }
 }

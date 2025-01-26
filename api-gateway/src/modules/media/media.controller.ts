@@ -8,6 +8,7 @@ import {
   Param,
   Res,
   StreamableFile,
+  ParseFilePipe,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -16,6 +17,7 @@ import { createReadStream } from 'fs';
 import { Response } from 'express';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
+import { CustomFileValidator } from 'src/utils/helpers/custom-file-validator';
 
 @Controller('api/media')
 export class MediaController {
@@ -30,7 +32,14 @@ export class MediaController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@UploadedFile() file: Express.Multer.File): Observable<unknown> {
+  uploadFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new CustomFileValidator({})],
+      }),
+    )
+    file: Express.Multer.File,
+  ): Observable<unknown> {
     console.log('file', file);
     return this.mediaService.send({ cmd: 'uploadFile' }, { file }).pipe(handleRpcError());
   }
