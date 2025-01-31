@@ -10,6 +10,7 @@ const contentStatuses = ['draft', 'published', 'archived'] as const;
 
 @Schema({
   timestamps: true,
+  collection: 'test_collection',
   toJSON: {
     virtuals: true,
     transform: (doc, ret) => {

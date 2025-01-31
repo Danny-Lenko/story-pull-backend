@@ -190,7 +190,6 @@ export class ContentService {
           // If content is being published, set publishedAt
           const updates = {
             ...updateContentDto,
-            updatedAt: new Date(),
             publishedAt:
               updateContentDto.status === 'published' && existingContent.status !== 'published'
                 ? new Date()

@@ -1,10 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as mimeTypes from 'mime-types';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { catchError, from, Observable, of, throwError } from 'rxjs';
 import { promisify } from 'util';
-import * as mimeTypes from 'mime-types';
+import { MediaAssetService } from './media-asset.service';
+import { MediaAsset } from '../schemas/media-asset';
 
 const mkdir = promisify(fs.mkdir);
 const writeFile = promisify(fs.writeFile);
@@ -20,7 +22,10 @@ export class StorageService {
     audio: /\/(mp3|wav)$/i,
   };
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private mediaAssetService: MediaAssetService,
+  ) {
     this.baseUploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
     this.initializeStorage();
   }
@@ -43,7 +48,7 @@ export class StorageService {
     }
   }
 
-  saveFile(file: Express.Multer.File): Observable<string> {
+  saveFile(file: Express.Multer.File): Observable<MediaAsset> {
     const fileType = this.getFileType(file.mimetype);
 
     if (!fileType) {
@@ -56,8 +61,38 @@ export class StorageService {
     const filePath = path.join(subDirectory, filename);
 
     // Convert promise to Observable
+    // return from(
+    //   writeFile(filePath, this.getFileBuffer(file)).then(() => `${fileType}/${filename}`),
+    // ).pipe(
+    //   catchError((error) => {
+    //     this.logger.error(`Failed to save file ${filename}:`, error);
+    //     throw error;
+    //   }),
+    // );
+
     return from(
-      writeFile(filePath, this.getFileBuffer(file)).then(() => `${fileType}/${filename}`),
+      writeFile(filePath, this.getFileBuffer(file)).then(() => {
+        // Create metadata entry
+        this.logger.log(`File saved:
+          filename: ${file.originalname},
+          storedFilename: ${filename},
+          filepath: ${fileType}/${filename},
+          mimetype: ${file.mimetype},
+          size: ${file.size},
+          type: ${fileType},`);
+
+        return this.mediaAssetService.createMediaAsset({
+          filename: file.originalname,
+          storedFilename: filename,
+          filepath: `${fileType}/${filename}`,
+          mimetype: file.mimetype,
+          size: file.size,
+          type: fileType,
+          uploadedBy: 'current-user-id', // You'll need to add authentication context
+          // metadata: this.extractMetadata(file),
+          metadata: {},
+        });
+      }),
     ).pipe(
       catchError((error) => {
         this.logger.error(`Failed to save file ${filename}:`, error);
@@ -113,5 +148,13 @@ export class StorageService {
     }
 
     return null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractMetadata(file: Express.Multer.File) {
+    // Implement metadata extraction logic
+    // For images, you might use sharp
+    // For videos, you might use ffprobe
+    return {};
   }
 }
