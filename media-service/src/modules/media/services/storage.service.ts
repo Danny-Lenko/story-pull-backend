@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as mimeTypes from 'mime-types';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { catchError, from, Observable, of, throwError } from 'rxjs';
+import { catchError, from, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { promisify } from 'util';
 import { MediaAssetService } from './media-asset.service';
 import { MediaAsset } from '../schemas/media-asset';
@@ -15,12 +15,25 @@ const writeFile = promisify(fs.writeFile);
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly baseUploadDir: string;
-  private static readonly ALLOWED_DIRECTORIES = {
-    images: /\/(jpg|jpeg|png|gif|svg)$/i,
-    documents: /\/(pdf|md|txt|doc|docx)$/i,
-    videos: /\/(mp4|webm)$/i,
-    audio: /\/(mp3|wav)$/i,
-  };
+  // Define both directory names and valid types
+  private static readonly MEDIA_TYPES = {
+    image: {
+      directory: 'images',
+      mimePattern: /\/(jpg|jpeg|png|gif|svg)$/i,
+    },
+    document: {
+      directory: 'documents',
+      mimePattern: /\/(pdf|md|txt|doc|docx)$/i,
+    },
+    video: {
+      directory: 'videos',
+      mimePattern: /\/(mp4|webm)$/i,
+    },
+    audio: {
+      directory: 'audio',
+      mimePattern: /\/(mp3|wav)$/i,
+    },
+  } as const;
 
   constructor(
     private configService: ConfigService,
@@ -50,50 +63,48 @@ export class StorageService {
 
   saveFile(file: Express.Multer.File): Observable<MediaAsset> {
     const fileType = this.getFileType(file.mimetype);
-
     if (!fileType) {
-      this.logger.error(`Unsupported file type: ${file.mimetype}`);
-      throw new NotFoundException(`Unsupported file type: ${file.mimetype}`);
+      throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
 
-    const subDirectory = path.join(this.baseUploadDir, fileType);
     const filename = `${Date.now()}-${file.originalname}`;
+    const directory = this.getDirectoryForType(fileType);
+    const subDirectory = path.join(this.baseUploadDir, directory);
     const filePath = path.join(subDirectory, filename);
 
-    // Convert promise to Observable
-    // return from(
-    //   writeFile(filePath, this.getFileBuffer(file)).then(() => `${fileType}/${filename}`),
-    // ).pipe(
-    //   catchError((error) => {
-    //     this.logger.error(`Failed to save file ${filename}:`, error);
-    //     throw error;
-    //   }),
-    // );
-
+    // Create metadata first
     return from(
-      writeFile(filePath, this.getFileBuffer(file)).then(() => {
-        // Create metadata entry
-        this.logger.log(`File saved:
-          filename: ${file.originalname},
-          storedFilename: ${filename},
-          filepath: ${fileType}/${filename},
-          mimetype: ${file.mimetype},
-          size: ${file.size},
-          type: ${fileType},`);
-
-        return this.mediaAssetService.createMediaAsset({
-          filename: file.originalname,
-          storedFilename: filename,
-          filepath: `${fileType}/${filename}`,
-          mimetype: file.mimetype,
-          size: file.size,
-          type: fileType,
-          uploadedBy: 'current-user-id', // You'll need to add authentication context
-          // metadata: this.extractMetadata(file),
-          metadata: {},
-        });
+      this.mediaAssetService.createMediaAsset({
+        filename: file.originalname,
+        storedFilename: filename,
+        filepath: `${directory}/${filename}`,
+        mimetype: file.mimetype,
+        size: file.size,
+        type: fileType,
+        uploadedBy: 'current-user-id',
+        // metadata: this.extractMetadata(file),
+        metadata: {},
       }),
     ).pipe(
+      // If metadata creation succeeds, save the file
+      mergeMap((mediaAsset) => {
+        this.logger.debug(`MEDIAASSET ${mediaAsset}`);
+        return from(writeFile(filePath, this.getFileBuffer(file))).pipe(map(() => mediaAsset));
+      }),
+      catchError((error) => {
+        // Cleanup on error
+        return from(
+          (async () => {
+            if (fs.existsSync(filePath)) {
+              await fs.promises.unlink(filePath);
+            }
+            if (error.mediaAssetId) {
+              await this.mediaAssetService.deleteMediaAsset(error.mediaAssetId);
+            }
+            throw error;
+          })(),
+        );
+      }),
       catchError((error) => {
         this.logger.error(`Failed to save file ${filename}:`, error);
         throw error;
@@ -102,21 +113,20 @@ export class StorageService {
   }
 
   getFile(filename: string): Observable<{ filePath: string; mimeType: string }> {
-    const { ALLOWED_DIRECTORIES } = StorageService;
+    const mimeType = mimeTypes.lookup(filename) || 'application/octet-stream';
 
-    const subdirectories = Object.keys(ALLOWED_DIRECTORIES);
+    // Find the correct type and directory using the MEDIA_TYPES configuration
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const matchingType = Object.entries(StorageService.MEDIA_TYPES).find(([_, config]) =>
+      config.mimePattern.test(mimeType),
+    );
 
-    // Find the correct subdirectory by checking MIME types
-    const matchingSubdirectory = subdirectories.find((type) => {
-      const regex = ALLOWED_DIRECTORIES[type];
-      return regex.test(mimeTypes.lookup(filename) || '');
-    });
-
-    if (!matchingSubdirectory) {
+    if (!matchingType) {
       return throwError(() => new NotFoundException('File type not supported or unknown'));
     }
 
-    const filePath = path.join(this.baseUploadDir, matchingSubdirectory, filename);
+    const directory = matchingType[1].directory; // Get the plural directory name
+    const filePath = path.join(this.baseUploadDir, directory, filename);
 
     this.logger.debug(`Retrieving file: ${filePath}`);
 
@@ -124,7 +134,6 @@ export class StorageService {
       return throwError(() => new NotFoundException('File not found'));
     }
 
-    const mimeType = mimeTypes.lookup(filename) || 'application/octet-stream';
     return of({ filePath, mimeType });
   }
 
@@ -139,15 +148,16 @@ export class StorageService {
   }
 
   private getFileType(mimetype: string): string | null {
-    const { ALLOWED_DIRECTORIES } = StorageService;
-
-    for (const [type, regex] of Object.entries(ALLOWED_DIRECTORIES)) {
-      if (regex.test(mimetype)) {
+    for (const [type, config] of Object.entries(StorageService.MEDIA_TYPES)) {
+      if (config.mimePattern.test(mimetype)) {
         return type;
       }
     }
-
     return null;
+  }
+
+  private getDirectoryForType(type: string): string {
+    return StorageService.MEDIA_TYPES[type]?.directory || '';
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
