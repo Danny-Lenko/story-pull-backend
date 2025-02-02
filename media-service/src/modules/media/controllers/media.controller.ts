@@ -14,7 +14,7 @@ export class MediaController {
   @MessagePattern({ cmd: 'uploadFile' })
   uploadFile(data: { file: Express.Multer.File }) {
     return this.storageService.saveFile(data.file).pipe(
-      map((filename) => ({ filename })),
+      map((filename) => filename),
       transformToRpcException(),
     );
   }

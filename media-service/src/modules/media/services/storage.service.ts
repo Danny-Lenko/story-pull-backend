@@ -23,7 +23,7 @@ export class StorageService {
     },
     document: {
       directory: 'documents',
-      mimePattern: /\/(pdf|md|txt|doc|docx)$/i,
+      mimePattern: /\/(pdf|md|txt|doc|docx|plain)$/i,
     },
     video: {
       directory: 'videos',
@@ -83,13 +83,20 @@ export class StorageService {
         type: fileType,
         uploadedBy: 'current-user-id',
         // metadata: this.extractMetadata(file),
-        metadata: {},
+        metadata: { width: 100, height: 100 }, // mock metadata
       }),
     ).pipe(
       // If metadata creation succeeds, save the file
       mergeMap((mediaAsset) => {
         this.logger.debug(`MEDIAASSET ${mediaAsset}`);
-        return from(writeFile(filePath, this.getFileBuffer(file))).pipe(map(() => mediaAsset));
+        return from(writeFile(filePath, this.getFileBuffer(file))).pipe(
+          map(() => mediaAsset),
+          catchError((error) => {
+            // Attach the media asset id so that cleanup deletes it from the database
+            error.mediaAssetId = mediaAsset.storedFilename;
+            return throwError(() => error);
+          }),
+        );
       }),
       catchError((error) => {
         // Cleanup on error
