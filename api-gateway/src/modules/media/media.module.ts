@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { MediaController } from './media.controller';
@@ -20,5 +20,6 @@ import { MediaController } from './media.controller';
     ]),
   ],
   controllers: [MediaController],
+  providers: [Logger],
 })
 export class MediaModule {}

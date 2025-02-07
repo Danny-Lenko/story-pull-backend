@@ -3,10 +3,12 @@ import * as path from 'path';
 import * as mimeTypes from 'mime-types';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { catchError, from, map, mergeMap, Observable, of, throwError } from 'rxjs';
+import { catchError, from, Observable, of, throwError } from 'rxjs';
 import { promisify } from 'util';
-import { MediaAssetService } from './media-asset.service';
-import { MediaAsset } from '../schemas/media-asset';
+
+import { MEDIA_TYPES } from '../constants/media-types';
+import { getFileType } from '../../../utils/helpers/getFileType';
+import { getDirectoryForType } from '../../../utils/helpers/getDirectoryForType';
 
 const mkdir = promisify(fs.mkdir);
 const writeFile = promisify(fs.writeFile);
@@ -16,29 +18,8 @@ export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly baseUploadDir: string;
   // Define both directory names and valid types
-  private static readonly MEDIA_TYPES = {
-    image: {
-      directory: 'images',
-      mimePattern: /\/(jpg|jpeg|png|gif|svg)$/i,
-    },
-    document: {
-      directory: 'documents',
-      mimePattern: /\/(pdf|md|txt|doc|docx|plain)$/i,
-    },
-    video: {
-      directory: 'videos',
-      mimePattern: /\/(mp4|webm)$/i,
-    },
-    audio: {
-      directory: 'audio',
-      mimePattern: /\/(mp3|wav)$/i,
-    },
-  } as const;
 
-  constructor(
-    private configService: ConfigService,
-    private mediaAssetService: MediaAssetService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.baseUploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
     this.initializeStorage();
   }
@@ -61,62 +42,81 @@ export class StorageService {
     }
   }
 
-  saveFile(file: Express.Multer.File): Observable<MediaAsset> {
-    const fileType = this.getFileType(file.mimetype);
+  // saveFile(file: Express.Multer.File): Observable<MediaAsset> {
+  // const fileType = this.getFileType(file.mimetype);
+  // if (!fileType) {
+  //   throw new Error(`Unsupported file type: ${file.mimetype}`);
+  // }
+  // const filename = `${Date.now()}-${file.originalname}`;
+  // const directory = this.getDirectoryForType(fileType);
+  // const subDirectory = path.join(this.baseUploadDir, directory);
+  // const filePath = path.join(subDirectory, filename);
+  // // Create metadata first
+  // return from(
+  //   this.mediaAssetService.createMediaAsset({
+  //     filename: file.originalname,
+  //     storedFilename: filename,
+  //     filepath: `${directory}/${filename}`,
+  //     mimetype: file.mimetype,
+  //     size: file.size,
+  //     type: fileType,
+  //     uploadedBy: 'current-user-id',
+  //     // metadata: this.extractMetadata(file),
+  //     metadata: { width: 100, height: 100 }, // mock metadata
+  //   }),
+  // ).pipe(
+  // If metadata creation succeeds, save the file
+  // mergeMap((mediaAsset) => {
+  //   this.logger.debug(`MEDIAASSET ${mediaAsset}`);
+  //   return from(writeFile(filePath, this.getFileBuffer(file))).pipe(
+  //     map(() => mediaAsset),
+  //     catchError((error) => {
+  //       // Attach the media asset id so that cleanup deletes it from the database
+  //       error.mediaAssetId = mediaAsset.storedFilename;
+  //       return throwError(() => error);
+  //     }),
+  //   );
+  // }),
+  // catchError((error) => {
+  //   // Cleanup on error
+  //   return from(
+  //     (async () => {
+  //       if (fs.existsSync(filePath)) {
+  //         await fs.promises.unlink(filePath);
+  //       }
+  //       if (error.mediaAssetId) {
+  //         await this.mediaAssetService.deleteMediaAsset(error.mediaAssetId);
+  //       }
+  //       throw error;
+  //     })(),
+  //   );
+  // }),
+  // catchError((error) => {
+  //   this.logger.error(`Failed to save file ${filename}:`, error);
+  //   throw error;
+  // }),
+  // );
+  // }
+
+  saveFile({ file, storedFilename }: { file: Express.Multer.File; storedFilename: string }) {
+    const fileType = getFileType(file.mimetype);
     if (!fileType) {
       throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
 
-    const filename = `${Date.now()}-${file.originalname}`;
-    const directory = this.getDirectoryForType(fileType);
+    const directory = getDirectoryForType(fileType);
     const subDirectory = path.join(this.baseUploadDir, directory);
-    const filePath = path.join(subDirectory, filename);
+    const filePath = path.join(subDirectory, storedFilename);
 
-    // Create metadata first
-    return from(
-      this.mediaAssetService.createMediaAsset({
-        filename: file.originalname,
-        storedFilename: filename,
-        filepath: `${directory}/${filename}`,
-        mimetype: file.mimetype,
-        size: file.size,
-        type: fileType,
-        uploadedBy: 'current-user-id',
-        // metadata: this.extractMetadata(file),
-        metadata: { width: 100, height: 100 }, // mock metadata
-      }),
-    ).pipe(
-      // If metadata creation succeeds, save the file
-      mergeMap((mediaAsset) => {
-        this.logger.debug(`MEDIAASSET ${mediaAsset}`);
-        return from(writeFile(filePath, this.getFileBuffer(file))).pipe(
-          map(() => mediaAsset),
-          catchError((error) => {
-            // Attach the media asset id so that cleanup deletes it from the database
-            error.mediaAssetId = mediaAsset.storedFilename;
-            return throwError(() => error);
-          }),
-        );
-      }),
+    return from(writeFile(filePath, this.getFileBuffer(file))).pipe(
+      // map(() => mediaAsset),
       catchError((error) => {
-        // Cleanup on error
-        return from(
-          (async () => {
-            if (fs.existsSync(filePath)) {
-              await fs.promises.unlink(filePath);
-            }
-            if (error.mediaAssetId) {
-              await this.mediaAssetService.deleteMediaAsset(error.mediaAssetId);
-            }
-            throw error;
-          })(),
-        );
-      }),
-      catchError((error) => {
-        this.logger.error(`Failed to save file ${filename}:`, error);
-        throw error;
+        // Attach the media asset id so that cleanup deletes it from the database
+        // error.mediaAssetId = mediaAsset.storedFilename;
+        return throwError(() => error);
       }),
     );
+    // Create metadata first
   }
 
   getFile(filename: string): Observable<{ filePath: string; mimeType: string }> {
@@ -124,7 +124,7 @@ export class StorageService {
 
     // Find the correct type and directory using the MEDIA_TYPES configuration
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const matchingType = Object.entries(StorageService.MEDIA_TYPES).find(([_, config]) =>
+    const matchingType = Object.entries(MEDIA_TYPES).find(([_, config]) =>
       config.mimePattern.test(mimeType),
     );
 
@@ -152,19 +152,6 @@ export class StorageService {
 
   private getFilePath(filename: string): string {
     return path.join(this.baseUploadDir, filename);
-  }
-
-  private getFileType(mimetype: string): string | null {
-    for (const [type, config] of Object.entries(StorageService.MEDIA_TYPES)) {
-      if (config.mimePattern.test(mimetype)) {
-        return type;
-      }
-    }
-    return null;
-  }
-
-  private getDirectoryForType(type: string): string {
-    return StorageService.MEDIA_TYPES[type]?.directory || '';
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

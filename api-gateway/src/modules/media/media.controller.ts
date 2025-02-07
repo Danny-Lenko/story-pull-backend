@@ -9,6 +9,8 @@ import {
   Res,
   StreamableFile,
   ParseFilePipe,
+  UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, Observable } from 'rxjs';
@@ -18,17 +20,16 @@ import { Response } from 'express';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
 import { CustomFileValidator } from 'src/utils/helpers/custom-file-validator';
+import { JwtAuthGuard } from 'src/shared/guards/jwt.auth.guard';
+import { UserId } from 'src/shared/decorators/userId.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/media')
 export class MediaController {
-  constructor(@Inject('MEDIA_SERVICE') private readonly mediaService: ClientProxy) {}
-
-  @Get('hello')
-  hello(): Observable<unknown> {
-    console.log('MediaController.hello()');
-    console.log('this.mediaService', this.mediaService);
-    return this.mediaService.send({ cmd: 'getHello' }, {}).pipe(handleRpcError());
-  }
+  constructor(
+    @Inject('MEDIA_SERVICE') private readonly mediaService: ClientProxy,
+    private readonly logger: Logger,
+  ) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -39,9 +40,11 @@ export class MediaController {
       }),
     )
     file: Express.Multer.File,
+    @UserId() userId: string,
   ): Observable<unknown> {
-    console.log('file', file);
-    return this.mediaService.send({ cmd: 'uploadFile' }, { file }).pipe(handleRpcError());
+    this.logger.log(`User ${userId} uploaded file ${file.originalname}`);
+
+    return this.mediaService.send({ cmd: 'uploadFile' }, { file, userId }).pipe(handleRpcError());
   }
 
   @Get(':filename')

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { MediaController } from './controllers/media.controller';
 import { StorageService } from './services/storage.service';
 import { ConfigModule } from '@nestjs/config';
@@ -12,6 +12,6 @@ import { MediaAsset, MediaAssetSchema } from './schemas/media-asset';
     MongooseModule.forFeature([{ name: MediaAsset.name, schema: MediaAssetSchema }]),
   ],
   controllers: [MediaController],
-  providers: [StorageService, MediaAssetService],
+  providers: [StorageService, MediaAssetService, Logger],
 })
 export class MediaModule {}

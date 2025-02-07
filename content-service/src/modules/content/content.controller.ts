@@ -9,9 +9,10 @@ import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
 export class ContentController {
-  private readonly logger = new Logger(ContentController.name);
-
-  constructor(private readonly contentService: ContentService) {}
+  constructor(
+    private readonly contentService: ContentService,
+    private readonly logger: Logger,
+  ) {}
 
   @MessagePattern({ cmd: 'createContent' })
   create(@Payload() message: { data: CreateContentDto; userId: string }) {
