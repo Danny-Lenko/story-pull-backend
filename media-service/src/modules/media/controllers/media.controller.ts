@@ -1,4 +1,4 @@
-import { Controller, UseFilters } from '@nestjs/common';
+import { Controller, Logger, UseFilters } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { catchError, forkJoin, map } from 'rxjs';
@@ -10,20 +10,16 @@ import { MediaAssetService } from '../services/media-asset.service';
 @Controller()
 @UseFilters(new RpcExceptionFilter())
 export class MediaController {
+  private readonly logger = new Logger(MediaController.name);
+
   constructor(
     private readonly storageService: StorageService,
     private readonly mediaAssetService: MediaAssetService,
-    // private readonly logger: Logger,
   ) {}
 
   @MessagePattern({ cmd: 'uploadFile' })
   uploadFile({ file, userId }: { file: Express.Multer.File; userId: string }) {
-    // this.logger.verbose(`USER: ${userId} is uploading file: ${file.originalname}`);
-
-    // return this.storageService.saveFile(file).pipe(
-    //   map((filename) => filename),
-    //   transformToRpcException(),
-    // );
+    this.logger.verbose(`USER: ${userId} is uploading file: ${file.originalname}`);
 
     const storedFilename = `${Date.now()}-${file.originalname}`;
     // create uuid to then add to the file metadata
@@ -40,7 +36,6 @@ export class MediaController {
         throw error;
       }),
       map(({ mediaAsset }) => {
-        // this.logger.log(mediaAsset);
         return mediaAsset;
       }),
       transformToRpcException(),

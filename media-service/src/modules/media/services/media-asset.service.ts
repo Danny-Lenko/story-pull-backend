@@ -1,5 +1,4 @@
-// import path from 'path';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
@@ -9,18 +8,13 @@ import { getDirectoryForType } from '../../../utils/helpers/getDirectoryForType'
 
 @Injectable()
 export class MediaAssetService {
-  // private readonly baseUploadDir: string;
+  private readonly logger = new Logger(MediaAssetService.name);
 
   constructor(
     @InjectModel(MediaAsset.name)
     private mediaAssetModel: Model<MediaAssetDocument>,
-    // private logger: Logger,
-    // private configService: ConfigService,
-  ) {
-    // this.baseUploadDir = this.configService.get<string>('UPLOAD_DIR') || '../shared/uploads';
-  }
+  ) {}
 
-  // async createMediaAsset(mediaAssetData: Partial<MediaAsset>): Promise<MediaAsset> {
   async createMediaAsset({
     file,
     storedFilename,
@@ -32,15 +26,11 @@ export class MediaAssetService {
   }): Promise<MediaAsset> {
     const fileType = getFileType(file.mimetype);
 
-    // this.logger.log(`USER: ${userId} is uploading file: ${file.originalname}`);
-
     if (!fileType) {
       throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
 
     const directory = getDirectoryForType(fileType);
-    // const subDirectory = path.join(this.baseUploadDir, directory);
-    // const filePath = path.join(subDirectory, storedFilename);
 
     const mediaAssetData = {
       filename: file.originalname,
@@ -73,17 +63,4 @@ export class MediaAssetService {
   async deleteMediaAsset(id: string): Promise<MediaAsset | null> {
     return this.mediaAssetModel.findByIdAndDelete(id).exec();
   }
-
-  // private getFileType(mimetype: string): string | null {
-  //   for (const [type, config] of Object.entries(MEDIA_TYPES)) {
-  //     if (config.mimePattern.test(mimetype)) {
-  //       return type;
-  //     }
-  //   }
-  //   return null;
-  // }
-
-  // private getDirectoryForType(type: string): string {
-  //   return MEDIA_TYPES[type]?.directory || '';
-  // }
 }
