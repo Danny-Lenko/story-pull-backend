@@ -19,9 +19,9 @@ import { createReadStream } from 'fs';
 import { Response } from 'express';
 
 import { handleRpcError } from '../../utils/operators/rpc-error-handler.operator';
-import { CustomFileValidator } from 'src/utils/helpers/custom-file-validator';
-import { JwtAuthGuard } from 'src/shared/guards/jwt.auth.guard';
-import { UserId } from 'src/shared/decorators/userId.decorator';
+import { CustomFileValidator } from '../../utils/helpers/custom-file-validator';
+import { JwtAuthGuard } from '../../shared/guards/jwt.auth.guard';
+import { UserId } from '../../shared/decorators/userId.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/media')
