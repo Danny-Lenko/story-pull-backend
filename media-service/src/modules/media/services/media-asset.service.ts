@@ -63,4 +63,27 @@ export class MediaAssetService {
   async deleteMediaAsset(id: string): Promise<MediaAsset | null> {
     return this.mediaAssetModel.findByIdAndDelete(id).exec();
   }
+
+  // For More Information: https://chatgpt.com/share/67b08878-f604-800a-8c0e-dc7d68c0fccd | danylenko.1407
+
+  // Method for incrementing usageCount
+  async incrementUsageCount(id: string): Promise<MediaAsset | null> {
+    return this.mediaAssetModel
+      .findByIdAndUpdate(id, { $inc: { usageCount: 1 } }, { new: true })
+      .exec();
+  }
+
+  // Method for adding reference
+  async addReference(id: string, referenceId: string): Promise<MediaAsset | null> {
+    return this.mediaAssetModel
+      .findByIdAndUpdate(id, { $addToSet: { references: referenceId } }, { new: true })
+      .exec();
+  }
+
+  // Method for removing reference
+  async removeReference(id: string, referenceId: string): Promise<MediaAsset | null> {
+    return this.mediaAssetModel
+      .findByIdAndUpdate(id, { $pull: { references: referenceId } }, { new: true })
+      .exec();
+  }
 }

@@ -22,17 +22,13 @@ export class MediaController {
     this.logger.verbose(`USER: ${userId} is uploading file: ${file.originalname}`);
 
     const storedFilename = `${Date.now()}-${file.originalname}`;
-    // create uuid to then add to the file metadata
 
     return forkJoin({
       mediaAsset: this.mediaAssetService.createMediaAsset({ file, storedFilename, userId }),
       fileSave: this.storageService.saveFile({ file, storedFilename }),
     }).pipe(
       catchError(async (error) => {
-        await Promise.all([
-          this.mediaAssetService.deleteMediaAsset(storedFilename),
-          // this.storageService.deleteFile(storedFilename),
-        ]);
+        await Promise.all([this.mediaAssetService.deleteMediaAsset(storedFilename)]);
         throw error;
       }),
       map(({ mediaAsset }) => {
