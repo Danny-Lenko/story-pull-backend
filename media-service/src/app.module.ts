@@ -10,6 +10,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MediaAsset, MediaAssetSchema } from './modules/media/schemas/media-asset';
 import { MediaAssetService } from './modules/media/services/media-asset.service';
 
+// the TEAM essense db infrustructure https://chatgpt.com/share/67b8749c-f3fc-800a-ac36-541eae4d24c6 || danylenko.1407
+
 @Module({
   imports: [
     MediaModule,

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { MediaAsset, MediaAssetDocument } from '../schemas/media-asset';
 import { getFileType } from '../../../utils/helpers/getFileType';
@@ -67,7 +67,9 @@ export class MediaAssetService {
   // For More Information: https://chatgpt.com/share/67b08878-f604-800a-8c0e-dc7d68c0fccd | danylenko.1407
 
   // Method for incrementing usageCount
-  async incrementUsageCount(id: string): Promise<MediaAsset | null> {
+  async incrementUsageCount(id: Types.ObjectId): Promise<MediaAsset | null> {
+    this.logger.verbose(`Incrementing usage count for media asset: ${id}`);
+
     return this.mediaAssetModel
       .findByIdAndUpdate(id, { $inc: { usageCount: 1 } }, { new: true })
       .exec();
@@ -85,5 +87,9 @@ export class MediaAssetService {
     return this.mediaAssetModel
       .findByIdAndUpdate(id, { $pull: { references: referenceId } }, { new: true })
       .exec();
+  }
+
+  async findOneByStoredFilename(storedFilename: string): Promise<MediaAsset | null> {
+    return this.mediaAssetModel.findOne({ storedFilename }).exec();
   }
 }

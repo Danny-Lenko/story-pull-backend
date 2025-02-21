@@ -46,6 +46,12 @@ export class MediaAsset {
 
   @Prop({ required: true })
   uploadedBy: string;
+
+  @Prop({ default: 0 })
+  usageCount: number;
+
+  @Prop({ type: [String], default: [] })
+  references: string[];
 }
 
 export const MediaAssetSchema = SchemaFactory.createForClass(MediaAsset);

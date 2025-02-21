@@ -6,6 +6,9 @@ import { StorageService } from '../services/storage.service';
 import { transformToRpcException } from '../../../utils/operators/rpc-transformer.operator';
 import { RpcExceptionFilter } from '../../../shared/filters/rpc-exception.filter';
 import { MediaAssetService } from '../services/media-asset.service';
+import { MediaAssetDocument } from '../schemas/media-asset';
+
+// ================================ TODO: ADD DELETE FILE METHOD ================================
 
 @Controller()
 @UseFilters(new RpcExceptionFilter())
@@ -39,7 +42,15 @@ export class MediaController {
   }
 
   @MessagePattern({ cmd: 'getFile' })
-  getFile(@Payload() filename: string) {
+  async getFile(@Payload() filename: string) {
+    // return this.storageService.getFile(filename).pipe(transformToRpcException());
+    const mediaAsset = (await this.mediaAssetService.findOneByStoredFilename(
+      filename,
+    )) as MediaAssetDocument;
+    this.logger.verbose(`MEDIA ASSET FOUND: ${mediaAsset}`);
+    if (mediaAsset) {
+      await this.mediaAssetService.incrementUsageCount(mediaAsset._id);
+    }
     return this.storageService.getFile(filename).pipe(transformToRpcException());
   }
 }
