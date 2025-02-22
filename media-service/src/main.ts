@@ -5,9 +5,6 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  // const app = await NestFactory.create(AppModule);
-  // await app.listen(3000);
-
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Main');

@@ -1,6 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
+// thoughts about the content model logic: https://chat.deepseek.com/a/chat/s/5710ad9d-b406-4f1b-9ddf-6e6a363edaee || devdanny.14
+//                                         https://chatgpt.com/share/67b9ba53-80a4-8013-af4b-5013ddd93c46 || devdanny.14
+
+// TODO: implement the content model logic
+
 export interface ContentDocument extends Content, Document {
   slug: string;
 }

@@ -43,11 +43,9 @@ export class MediaController {
 
   @MessagePattern({ cmd: 'getFile' })
   async getFile(@Payload() filename: string) {
-    // return this.storageService.getFile(filename).pipe(transformToRpcException());
     const mediaAsset = (await this.mediaAssetService.findOneByStoredFilename(
       filename,
     )) as MediaAssetDocument;
-    this.logger.verbose(`MEDIA ASSET FOUND: ${mediaAsset}`);
     if (mediaAsset) {
       await this.mediaAssetService.incrementUsageCount(mediaAsset._id);
     }
