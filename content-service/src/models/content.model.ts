@@ -1,6 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
+// GUESS, WE DON'T NEED A MODEL. GUESS IT SHOULD BE MADE OUT OF A SCHEMA:
+// For the base model
+// @InjectModel(ContentBase.name) private contentModel: Model<ContentBase>
+
+// For a specific discriminator
+// @InjectModel(Article.name) private articleModel: Model<Article>
+
 // thoughts about the content model logic: https://chat.deepseek.com/a/chat/s/5710ad9d-b406-4f1b-9ddf-6e6a363edaee || devdanny.14
 //                                         https://chatgpt.com/share/67b9ba53-80a4-8013-af4b-5013ddd93c46 || devdanny.14
 

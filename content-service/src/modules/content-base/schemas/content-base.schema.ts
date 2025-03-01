@@ -6,7 +6,17 @@ interface CustomFields {
   [key: string]: string | number | Date | boolean;
 }
 
-@Schema({ discriminatorKey: 'type', timestamps: true })
+@Schema({
+  discriminatorKey: 'type',
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret) => {
+      delete ret._id;
+      return ret;
+    },
+  },
+})
 export class ContentBase {
   @Prop({
     required: [true, 'Title is required'],
@@ -52,3 +62,15 @@ export class ContentBase {
 
 export type ContentBaseDocument = ContentBase & Document;
 export const ContentBaseSchema = SchemaFactory.createForClass(ContentBase);
+
+// Add virtual for URL slug
+ContentBaseSchema.virtual('slug').get(function (this: ContentBaseDocument) {
+  return this.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+});
+
+// Add indexes for performance optimization
+ContentBaseSchema.index({ title: 'text', body: 'text' });
+ContentBaseSchema.index({ type: 1, status: 1 });
+ContentBaseSchema.index({ createdAt: -1 });
+ContentBaseSchema.index({ publishedAt: -1 });
+ContentBaseSchema.index({ type: 1, status: 1, publishedAt: -1 });
