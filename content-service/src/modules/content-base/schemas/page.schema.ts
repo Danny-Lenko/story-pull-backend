@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ContentBase } from '../../content-base/schemas/content-base.schema';
 import { Document } from 'mongoose';
 
-@Schema({ collection: 'pages' })
+@Schema()
 export class Page extends ContentBase {
   @Prop({
     default: false,

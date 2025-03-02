@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ContentBase } from '../../content-base/schemas/content-base.schema';
 import { Document } from 'mongoose';
 
-@Schema({ collection: 'blog_posts' })
+@Schema()
 export class BlogPost extends ContentBase {
   @Prop({
     required: [true, 'Author is required'],

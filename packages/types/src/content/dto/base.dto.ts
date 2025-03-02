@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 
 // Shared Enums
-export const contentTypes = ['article', 'page', 'blog_post'] as const;
+export const contentTypes = ['Article', 'Page', 'Blog_post'] as const;
 export const contentStatuses = ['draft', 'published', 'archived'] as const;
 
 // Base DTO for common content fields

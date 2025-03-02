@@ -1,4 +1,3 @@
-// content-base.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -8,6 +7,7 @@ interface CustomFields {
 
 @Schema({
   discriminatorKey: 'type',
+  collection: 'content',
   timestamps: true,
   toJSON: {
     virtuals: true,

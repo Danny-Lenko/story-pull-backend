@@ -3,8 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import configuration from './config/configuration';
 import { Content, ContentSchema } from './models/content.model';
-import { ContentModule } from './modules/content/content.module';
-import { ContentBaseModule } from './content-base/content-base.module';
+// import { ContentModule } from './modules/content/content.module';
+import { ContentBaseModule } from './modules/content-base/content-base.module';
 
 @Module({
   imports: [
@@ -20,8 +20,7 @@ import { ContentBaseModule } from './content-base/content-base.module';
     }),
     MongooseModule.forFeature([{ name: Content.name, schema: ContentSchema }]),
 
-    ContentModule,
-
+    // ContentModule,
     ContentBaseModule,
   ],
 })

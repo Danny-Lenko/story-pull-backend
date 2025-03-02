@@ -14,7 +14,7 @@ export class ContentController {
     private readonly logger: Logger,
   ) {}
 
-  @MessagePattern({ cmd: 'createContent' })
+  @MessagePattern()
   create(@Payload() message: { data: CreateContentDto; userId: string }) {
     const { data, userId } = message;
     this.logger.log(`Creating new content: ${JSON.stringify(data)}`);
