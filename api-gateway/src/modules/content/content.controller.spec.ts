@@ -44,7 +44,7 @@ describe('ContentController', () => {
       controller.register(createContentDto, token).subscribe((result) => {
         expect(clientProxyMock.send).toHaveBeenCalledWith(
           { cmd: 'createContent' },
-          { data: createContentDto, metadata: { authorization: token } },
+          { data: createContentDto, userId: token },
         );
         expect(result).toEqual(response);
         done();
@@ -67,7 +67,7 @@ describe('ContentController', () => {
         error: (err) => {
           expect(clientProxyMock.send).toHaveBeenCalledWith(
             { cmd: 'createContent' },
-            { data: createContentDto, metadata: { authorization: token } },
+            { data: createContentDto, userId: token },
           );
           expect(err).toEqual(error);
           done();
@@ -87,8 +87,9 @@ describe('ContentController', () => {
       controller.getPaginatedContent(queryContentDto, token).subscribe((result) => {
         expect(clientProxyMock.send).toHaveBeenCalledWith(
           { cmd: 'findAllContent' },
-          { data: queryContentDto, metadata: { authorization: token } },
+          { data: queryContentDto, userId: token },
         );
+
         expect(result).toEqual(response);
         done();
       });
@@ -106,7 +107,7 @@ describe('ContentController', () => {
       controller.getContentById(id, token).subscribe((result) => {
         expect(clientProxyMock.send).toHaveBeenCalledWith(
           { cmd: 'findContentById' },
-          { id, metadata: { authorization: token } },
+          { id, userId: token },
         );
         expect(result).toEqual(response);
         done();
@@ -126,7 +127,7 @@ describe('ContentController', () => {
       controller.updateContent(id, updateDto, token).subscribe((result) => {
         expect(clientProxyMock.send).toHaveBeenCalledWith(
           { cmd: 'updateContent' },
-          { id, data: updateDto, metadata: { authorization: token } },
+          { id, data: updateDto, userId: token },
         );
         expect(result).toEqual(response);
         done();

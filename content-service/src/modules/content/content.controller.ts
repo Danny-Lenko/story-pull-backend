@@ -1,5 +1,5 @@
-import { Controller, UseFilters, Logger, Inject } from '@nestjs/common';
-import { ClientProxy, MessagePattern, Payload } from '@nestjs/microservices';
+import { Controller, UseFilters, Logger } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateContentDto, UpdateContentDto, QueryContentDto } from '@story-pull/types';
 
 import { ContentService } from './content.service';
@@ -9,14 +9,12 @@ import { RpcExceptionFilter } from '../../shared/filters/rpc-exception.filter';
 @Controller('content')
 @UseFilters(new RpcExceptionFilter())
 export class ContentController {
-  private readonly logger = new Logger(ContentController.name);
-
   constructor(
     private readonly contentService: ContentService,
-    @Inject('AUTH_SERVICE') private authClient: ClientProxy,
+    private readonly logger: Logger,
   ) {}
 
-  @MessagePattern({ cmd: 'createContent' })
+  @MessagePattern()
   create(@Payload() message: { data: CreateContentDto; userId: string }) {
     const { data, userId } = message;
     this.logger.log(`Creating new content: ${JSON.stringify(data)}`);

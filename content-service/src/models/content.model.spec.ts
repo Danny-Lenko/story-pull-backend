@@ -45,6 +45,7 @@ describe('Content Model', () => {
       title: 'Test Content',
       body: 'This is a test content body',
       type: 'article',
+      authorId: 'someUserId',
       author: 'Test Author',
       status: 'draft',
       tags: ['test', 'content'],
@@ -74,6 +75,7 @@ describe('Content Model', () => {
       title: 'This is a Test Title',
       body: 'Test body',
       type: 'article',
+      authorId: 'someUserId',
       author: 'Test Author',
     });
 

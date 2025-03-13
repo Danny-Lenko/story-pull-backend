@@ -1,4 +1,3 @@
-// rpc-exception.transform.ts
 import { RpcException } from '@nestjs/microservices';
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { throwError, Observable, catchError } from 'rxjs';

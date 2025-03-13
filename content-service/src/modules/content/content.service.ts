@@ -11,7 +11,7 @@ import { map, catchError, switchMap } from 'rxjs/operators';
 import { CreateContentDto, QueryContentDto, UpdateContentDto } from '@story-pull/types';
 
 import { Content, ContentDocument } from '../../models/content.model';
-import { ApiResponse } from './interfaces/api-response.interface';
+import { ApiResponse } from '../content-base/interfaces/api-response.interface';
 
 @Injectable()
 export class ContentService {
@@ -190,7 +190,6 @@ export class ContentService {
           // If content is being published, set publishedAt
           const updates = {
             ...updateContentDto,
-            updatedAt: new Date(),
             publishedAt:
               updateContentDto.status === 'published' && existingContent.status !== 'published'
                 ? new Date()
