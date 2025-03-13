@@ -2,8 +2,8 @@ import { Controller, UseFilters, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
   CreateContentDto,
+  QueryContentDto,
   // UpdateContentDto,
-  // QueryContentDto
 } from '@story-pull/types';
 
 import { ContentBaseService } from '../services/content-base.service';
@@ -23,21 +23,20 @@ export class ContentBaseController {
   @MessagePattern({ cmd: 'createContent' })
   create(@Payload() message: { data: CreateContentDto; userId: string }) {
     const { data, userId } = message;
-    this.logger.log(`Creating new content: ${JSON.stringify(data)}`);
-    this.logger.log(`Authenticated user: ${JSON.stringify(userId)}`);
+
     return this.contentService
       .create({ createContentDto: data, userId })
       .pipe(transformToRpcException());
   }
 
-  //   @MessagePattern({ cmd: 'findAllContent' })
-  //   findAll(@Payload() message: { data: QueryContentDto; userId: string }) {
-  //     const { data, userId } = message;
-  //     this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
-  //     return this.contentService
-  //       .findAllPaginated({ query: data, userId })
-  //       .pipe(transformToRpcException());
-  //   }
+  @MessagePattern({ cmd: 'findAllContent' })
+  findAll(@Payload() message: { data: QueryContentDto; userId: string }) {
+    const { data, userId } = message;
+    this.logger.log(`Finding all content with query: ${JSON.stringify(data)}`);
+    return this.contentService
+      .findAllPaginated({ query: data, userId })
+      .pipe(transformToRpcException());
+  }
 
   //   @MessagePattern({ cmd: 'findContentById' })
   //   findById(@Payload() message: { id: string; userId: string }) {

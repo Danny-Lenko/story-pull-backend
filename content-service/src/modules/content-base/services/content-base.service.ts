@@ -14,12 +14,13 @@ import {
 // import { map, catchError, switchMap } from 'rxjs/operators';
 import {
   CreateContentDto,
-  // QueryContentDto, UpdateContentDto
+  QueryContentDto,
+  // UpdateContentDto
 } from '@story-pull/types';
 import { ContentBase } from '../schemas/content-base.schema';
 
 // import { Content, ContentDocument } from '../../models/content.model';
-// import { ApiResponse } from './interfaces/api-response.interface';
+import { ApiResponse } from '../interfaces/api-response.interface';
 
 @Injectable()
 export class ContentBaseService {
@@ -44,121 +45,120 @@ export class ContentBaseService {
     );
   }
 
-  //   findAllPaginated({
-  //     query,
-  //     userId,
-  //   }: {
-  //     query: QueryContentDto;
-  //     userId: string;
-  //   }): Observable<ApiResponse<Content[]>> {
-  //     return from(this.findAllPaginatedInternal({ query, userId }));
-  //   }
+  findAllPaginated({
+    query,
+    userId,
+  }: {
+    query: QueryContentDto;
+    userId: string;
+  }): Observable<ApiResponse<ContentBase[]>> {
+    return from(this.findAllPaginatedPromise({ query, userId }));
+  }
 
-  //   private async findAllPaginatedInternal({
-  //     query,
-  //     userId,
-  //   }: {
-  //     query: QueryContentDto;
-  //     userId: string;
-  //   }): Promise<ApiResponse<Content[]>> {
-  //     try {
-  //       const {
-  //         page = 1,
-  //         limit = 10,
-  //         type,
-  //         status,
-  //         sortBy = 'createdAt',
-  //         sortOrder = 'desc',
-  //         search,
-  //         tags,
-  //         dateFrom,
-  //         dateTo,
-  //       } = query;
+  private async findAllPaginatedPromise({
+    query,
+    userId,
+  }: {
+    query: QueryContentDto;
+    userId: string;
+  }): Promise<ApiResponse<ContentBase[]>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        type,
+        status,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        search,
+        tags,
+        dateFrom,
+        dateTo,
+      } = query;
 
-  //       // Build filter conditions
-  //       const filter: Record<string, unknown> = {};
-  //       const appliedFilters: string[] = [];
+      // Build filter conditions
+      const filter: Record<string, unknown> = {};
+      const appliedFilters: string[] = [];
 
-  //       filter.$or = [
-  //         { authorId: userId },
-  //         // { status: 'published' }
-  //       ];
+      filter.$or = [
+        { creatorId: userId },
+        // { status: 'published' }
+      ];
 
-  //       // Text search
-  //       if (search) {
-  //         filter.$text = { $search: search };
-  //         appliedFilters.push('text_search');
-  //       }
+      // Text search
+      if (search) {
+        filter.$text = { $search: search };
+        appliedFilters.push('text_search');
+      }
 
-  //       // Type filter
-  //       if (type) {
-  //         filter.type = type;
-  //         appliedFilters.push('type');
-  //       }
+      // Type filter
+      if (type) {
+        filter.type = type;
+        appliedFilters.push('type');
+      }
 
-  //       // Status filter - now supports multiple statuses
-  //       if (status && status.length > 0) {
-  //         filter.status = { $in: status };
-  //         appliedFilters.push('status');
-  //       }
+      // Status filter - now supports multiple statuses
+      if (status && status.length > 0) {
+        filter.status = { $in: status };
+        appliedFilters.push('status');
+      }
 
-  //       // Tags filter
-  //       if (tags && tags.length > 0) {
-  //         filter.tags = { $all: tags };
-  //         appliedFilters.push('tags');
-  //       }
+      // Tags filter
+      if (tags && tags.length > 0) {
+        filter.tags = { $all: tags };
+        appliedFilters.push('tags');
+      }
 
-  //       // Date range filter
-  //       if (dateFrom || dateTo) {
-  //         filter.createdAt = {};
-  //         if (dateFrom) {
-  //           (filter.createdAt as { $gte?: Date; $lte?: Date }).$gte = dateFrom;
-  //           appliedFilters.push('date_from');
-  //         }
-  //         if (dateTo) {
-  //           (filter.createdAt as { $gte?: Date; $lte?: Date }).$lte = dateTo;
-  //           appliedFilters.push('date_to');
-  //         }
-  //       }
+      // Date range filter
+      if (dateFrom || dateTo) {
+        filter.createdAt = {};
+        if (dateFrom) {
+          (filter.createdAt as { $gte?: Date; $lte?: Date }).$gte = dateFrom;
+          appliedFilters.push('date_from');
+        }
+        if (dateTo) {
+          (filter.createdAt as { $gte?: Date; $lte?: Date }).$lte = dateTo;
+          appliedFilters.push('date_to');
+        }
+      }
 
-  //       // Calculate skip value for pagination
-  //       const skip = (page - 1) * limit;
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
 
-  //       // Build sort object
-  //       const sort: Record<string, 1 | -1> = {
-  //         [sortBy]: sortOrder === 'asc' ? 1 : -1,
-  //       };
+      // Build sort object
+      const sort: Record<string, 1 | -1> = {
+        [sortBy]: sortOrder === 'asc' ? 1 : -1,
+      };
 
-  //       // Execute queries
-  //       const [data, total] = await Promise.all([
-  //         this.contentModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
-  //         this.contentModel.countDocuments(filter),
-  //       ]);
+      // Execute queries
+      const [data, total] = await Promise.all([
+        this.contentBaseModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
+        this.contentBaseModel.countDocuments(filter),
+      ]);
 
-  //       // Calculate last page
-  //       const lastPage = Math.ceil(total / limit);
+      // Calculate last page
+      const lastPage = Math.ceil(total / limit);
 
-  //       return {
-  //         success: true,
-  //         data,
-  //         meta: {
-  //           pagination: {
-  //             total,
-  //             page,
-  //             lastPage,
-  //             limit,
-  //           },
-  //           filter: {
-  //             applied: appliedFilters,
-  //             available: ['text_search', 'type', 'status', 'tags', 'date_from', 'date_to'],
-  //           },
-  //         },
-  //       };
-  //     } catch (error) {
-  //       // Log the error here
-  //       throw new Error('Failed to fetch content: ' + error.message);
-  //     }
-  //   }
+      return {
+        success: true,
+        data,
+        meta: {
+          pagination: {
+            total,
+            page,
+            lastPage,
+            limit,
+          },
+          filter: {
+            applied: appliedFilters,
+            available: ['text_search', 'type', 'status', 'tags', 'date_from', 'date_to'],
+          },
+        },
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch content: ' + error.message);
+    }
+  }
 
   //   findById({ id, userId }: { id: string; userId: string }): Observable<Content> {
   //     return from(this.contentModel.findById(id).exec()).pipe(

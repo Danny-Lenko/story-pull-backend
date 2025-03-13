@@ -63,6 +63,13 @@ npm run start:dev
 - Write unit and integration tests for new features.
 - Use the shared libraries in the `shared/` directory for common functionality.
 
+### Packages
+
+1. cd packages/types
+2. make changes + increase version
+3. npm run build
+4. npm publish
+
 ## API Documentation
 
 API documentation is available through Swagger UI when running each service. Access it at:

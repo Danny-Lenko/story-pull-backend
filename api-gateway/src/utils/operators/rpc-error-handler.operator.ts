@@ -11,7 +11,7 @@ export function handleRpcError<T>() {
 
         // Handle validation errors
         if ('error' in error && error['error'].name === 'ValidationError') {
-          Logger.debug('VALIDATION ERROR', error, 'RpcErrorHandler');
+          Logger.verbose('VALIDATION ERROR', error, 'RpcErrorHandler');
           const { error: validationError } = error;
           const validationErrors = Object.values(validationError.errors).map(
             (err: { path: string; message: string }) => ({
@@ -23,8 +23,16 @@ export function handleRpcError<T>() {
           throw new ValidationException(validationErrors);
         }
 
+        // Handle RPC exceptions with array of errors format
+        if (error.isRpcException && error.error?.errors && Array.isArray(error.error.errors)) {
+          logger.verbose('RPC VALIDATION ERROR WITH ERRORS ARRAY:', error);
+
+          // Use the validation errors directly from the error object
+          throw new ValidationException(error.error.errors);
+        }
+
         if (error.isRpcException) {
-          logger.debug('ERROR.ISRpcEXCEPTION:');
+          logger.verbose('ERROR.ISRpcEXCEPTION:');
           // Forward the RPC exception details
           throw new HttpException(
             error.error,
