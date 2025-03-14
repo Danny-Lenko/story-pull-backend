@@ -21,6 +21,7 @@ This is a monorepo containing the following services:
 
 - Node.js (v18 or later)
 - npm or yarn
+- nest.js cli (npm i -g @nestjs/cli)
 - Docker and Docker Compose
 - MongoDB and PostgreSQL (run in Docker)
 
@@ -63,6 +64,12 @@ npm run start:dev
 - Write unit and integration tests for new features.
 - Use the shared libraries in the `shared/` directory for common functionality.
 
+### Bootstrapping a new microservice
+
+1. nest new microservice-name
+2. delete the git folder, the prettier & linter files
+3. see the cli commands to create a new module in the Links section below
+
 ### Packages
 
 1. cd packages/types
@@ -101,7 +108,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
    /=====================================/  https://chatgpt.com/share/67b9bad6-79c8-800b-9ef4-f99a9ecf94a0 || danny.lenko.14
    /=====================================/  https://claude.ai/chat/e25a201c-d29a-48b3-a661-34475dd29e29 || danny.lenko.14
 
-2. nest cli commands tocreate new nest.js module with all the basic contents: 
+2. nest cli commands to create new nest.js module with all the basic contents: 
 /=======/ https://claude.ai/chat/4a757305-d577-4626-ab7f-e12b4a14c094 || devdanny.14
 
 ### content-service
