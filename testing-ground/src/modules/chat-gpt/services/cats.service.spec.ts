@@ -24,6 +24,16 @@ describe('CatsService', () => {
               }
               return cats[id];
             }),
+            create: jest.fn().mockImplementation(async (cat) => {
+              cats.push(cat);
+              return cat;
+            }),
+            delete: jest.fn().mockImplementation((id) => {
+              if (!cats[id]) {
+                throw new NotFoundException('Cat not found');
+              }
+              cats.splice(id, 1);
+            }),
           };
         }
         if (typeof token === 'function') {
@@ -61,31 +71,23 @@ describe('CatsService', () => {
     });
   });
 
-  // describe('create', () => {
-  //   beforeEach(() => {
-  //     catsService = new CatsService();
-  //   });
+  describe('create', () => {
+    it('should save and return a new cat', async () => {
+      expect(await catsService.create('Simba')).toBe('Simba');
+      expect(await catsService.findAll()).toContain('Simba');
+    });
+  });
 
-  //   it('should save and return a new cat', () => {
-  //     expect(catsService.create('Simba')).toBe('Simba');
-  //     expect(catsService.findAll()).toContain('Simba');
-  //   });
-  // });
+  describe('delete', () => {
+    it('should delete a cat by an index parameter', () => {
+      catsService.delete(1);
+      expect(catsService.findAll()).not.toContain('Whiskers');
+    });
 
-  // describe('delete', () => {
-  //   beforeEach(() => {
-  //     catsService = new CatsService();
-  //   });
-
-  //   it('should delete a cat by an index parameter', () => {
-  //     catsService.delete(1);
-  //     expect(catsService.findAll()).not.toContain('Whiskers');
-  //   });
-
-  //   it('should throw NotFoundException if cat not found', () => {
-  //     expect(() => {
-  //       catsService.delete(99);
-  //     }).toThrow(new NotFoundException('Cat not found'));
-  //   });
-  // });
+    it('should throw NotFoundException if cat not found', () => {
+      expect(() => {
+        catsService.delete(99);
+      }).toThrow(NotFoundException);
+    });
+  });
 });
