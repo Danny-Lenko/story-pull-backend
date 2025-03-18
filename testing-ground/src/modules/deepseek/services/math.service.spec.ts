@@ -1,16 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MathService } from './math.service';
 import { BadRequestException } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { of } from 'rxjs';
+import { AxiosResponse } from 'axios';
 
 describe('MathService', () => {
   let mathService: MathService;
+  let httpService: HttpService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MathService],
+      providers: [
+        MathService,
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     mathService = module.get<MathService>(MathService);
+    httpService = module.get<HttpService>(HttpService);
   });
 
   it('should be defined', () => {
@@ -117,6 +130,92 @@ describe('MathService', () => {
       expect(() => {
         mathService.getStringLength('');
       }).toThrow('String cannot be empty');
+    });
+  });
+
+  describe('sumObjectValues', () => {
+    it('should calculate the sum of the "a" & "b" properties of an input object', () => {
+      expect(mathService.sumObjectValues({ a: 4, b: 7 })).toBe(11);
+      expect(mathService.sumObjectValues({ a: 4, b: -7 })).toBe(-3);
+      expect(mathService.sumObjectValues({ a: 0, b: 0 })).toBe(0);
+      expect(mathService.sumObjectValues({ a: 0.1, b: 0.2 })).toBeCloseTo(0.3, 5);
+    });
+
+    it('should throw BadRequestException if parameter object is missing a required property', () => {
+      const brokenObject = { a: 7 } as never;
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow('Object must contain properties "a" and "b"');
+    });
+
+    it('should throw BadRequestException if parameter object is empty', () => {
+      const brokenObject = {} as never;
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow('Object must contain properties "a" and "b"');
+    });
+
+    it('should throw BadRequestException if parameter is not an object', () => {
+      const brokenObject = '' as never;
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumObjectValues(brokenObject);
+      }).toThrow('Object must contain properties "a" and "b"');
+    });
+  });
+
+  describe('asyncSum', () => {
+    it('should return the sum of two positive numbers', async () => {
+      expect(await mathService.asyncSum(8, 7)).toBe(15);
+      expect(await mathService.asyncSum(0, 0)).toBe(0);
+      expect(await mathService.asyncSum(0.1, 0.2)).toBeCloseTo(0.3, 5);
+      expect(await mathService.asyncSum(Number.MAX_SAFE_INTEGER, 1)).toBe(
+        Number.MAX_SAFE_INTEGER + 1,
+      );
+    });
+
+    it('should throw BadRequestException if one of parameters is negative', async () => {
+      await expect(mathService.asyncSum(-8, 7)).rejects.toThrow(BadRequestException);
+      await expect(mathService.asyncSum(-8, 7)).rejects.toThrow('Numbers cannot be negative');
+    });
+  });
+
+  describe('fetchAndDouble', () => {
+    it('should return the doubled value from the API response', async () => {
+      const mockResponse: AxiosResponse<{ value: number }> = {
+        data: { value: 21 },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {
+          headers: undefined,
+        },
+      };
+
+      jest.spyOn(httpService, 'get').mockReturnValueOnce(of(mockResponse));
+      expect(await mathService.fetchAndDouble(21)).toBe(42);
+    });
+
+    it('should throw BadRequestException if request failed', async () => {
+      jest.spyOn(httpService, 'get').mockImplementationOnce(() => {
+        throw new BadRequestException('Failed to fetch number');
+      });
+
+      await expect(mathService.fetchAndDouble(21)).rejects.toThrow(BadRequestException);
     });
   });
 });
