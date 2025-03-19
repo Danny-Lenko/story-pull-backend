@@ -81,4 +81,52 @@ export class MathService {
     this.cache.set(cacheKey, result);
     return result;
   }
+
+  getDaysUntilEndOfYear(date: Date): number {
+    const endOfYear = new Date(date.getFullYear(), 11, 31);
+    const timeDiff = endOfYear.getTime() - date.getTime();
+
+    if (timeDiff < 0) {
+      throw new BadRequestException('Date is already after the end of the year');
+    }
+
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  }
+
+  doubleArray(numbers: number[]): number[] {
+    if (numbers.length === 0) {
+      throw new BadRequestException('Array cannot be empty');
+    }
+    return numbers.map((num) => num * 2);
+  }
+
+  calculateDistance(point: { x: number; y: number }): number {
+    if (!point || typeof point !== 'object' || !('x' in point) || !('y' in point)) {
+      throw new BadRequestException('Point must contain properties "x" and "y"');
+    }
+    return Math.sqrt(point.x ** 2 + point.y ** 2);
+  }
+
+  reverseString(str: string): string {
+    if (str.length === 0) {
+      throw new BadRequestException('String cannot be empty');
+    }
+    return str.split('').reverse().join('');
+  }
+
+  sumArrayObjectValues(objects: { value: number }[]): number {
+    if (objects.length === 0) {
+      throw new BadRequestException('Array cannot be empty');
+    }
+
+    let sum = 0;
+    for (const obj of objects) {
+      if (typeof obj.value !== 'number') {
+        throw new BadRequestException('Each object must contain a "value" property');
+      }
+      sum += obj.value;
+    }
+
+    return sum;
+  }
 }

@@ -279,4 +279,121 @@ describe('MathService', () => {
       expect(set).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('getDaysUntilEndOfYear', () => {
+    it('should return the correct number of days until the end of the year', () => {
+      expect(mathService.getDaysUntilEndOfYear(new Date('2025-3-19'))).toBe(287);
+      expect(mathService.getDaysUntilEndOfYear(new Date('3/19/2025'))).toBe(287);
+      expect(mathService.getDaysUntilEndOfYear(new Date('March 19, 2025'))).toBe(287);
+      expect(mathService.getDaysUntilEndOfYear(new Date(2025, 2, 19))).toBe(287);
+      expect(mathService.getDaysUntilEndOfYear(new Date(2025, 11, 31))).toBe(0);
+      expect(mathService.getDaysUntilEndOfYear(new Date(2025, 0, 1))).toBe(364);
+      expect(mathService.getDaysUntilEndOfYear(new Date(2024, 0, 1))).toBe(365);
+    });
+
+    it('should throw a BadRequestException if date is after the end of the 2025 year', () => {
+      expect(() => {
+        mathService.getDaysUntilEndOfYear(new Date(1767132000001));
+      }).toThrow(BadRequestException);
+    });
+  });
+
+  describe('doubleArray', () => {
+    it('should return an array with each element doubled', () => {
+      expect(mathService.doubleArray([11])).toEqual([22]);
+      expect(mathService.doubleArray([2, 0, -3, 0.7, Number.MAX_SAFE_INTEGER])).toEqual([
+        4,
+        0,
+        -6,
+        1.4,
+        Number.MAX_SAFE_INTEGER * 2,
+      ]);
+    });
+
+    it('should throw a BadRequestException if the input array is empty', () => {
+      expect(() => {
+        mathService.doubleArray([]);
+      }).toThrow(BadRequestException);
+    });
+  });
+
+  describe('calculateDistance', () => {
+    it('should return the distance of a point in the Decart system', () => {
+      expect(mathService.calculateDistance({ x: 3, y: 4 })).toBe(5);
+      expect(mathService.calculateDistance({ x: 0, y: 0 })).toBe(0);
+      expect(mathService.calculateDistance({ x: 6, y: -8 })).toBe(10);
+      expect(mathService.calculateDistance({ x: 1.5, y: 2.5 })).toBeCloseTo(2.915, 3);
+    });
+
+    it('should throw BadRequestException if input object is empty or input data is insufficient', () => {
+      expect(() => {
+        mathService.calculateDistance({} as never);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.calculateDistance({ a: 7 } as never);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.calculateDistance({ b: 2 } as never);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.calculateDistance(null as never);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.calculateDistance(undefined as never);
+      }).toThrow(BadRequestException);
+    });
+  });
+
+  describe('reverseString', () => {
+    it('should the reversed version of the input string', () => {
+      expect(mathService.reverseString('Hello')).toBe('olleH');
+      expect(mathService.reverseString('   ')).toBe('   ');
+      expect(mathService.reverseString('X')).toBe('X');
+      expect(mathService.reverseString('  Hello   World!  ')).toBe('  !dlroW   olleH  ');
+      expect(mathService.reverseString('$&*$Y@)(*$&@^!')).toBe('!^@&$*()@Y$*&$');
+    });
+
+    it('should throw a BadRequestException if the input string is empty', () => {
+      expect(() => {
+        mathService.reverseString('');
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.reverseString('');
+      }).toThrow('String cannot be empty');
+    });
+  });
+
+  describe('sumArrayObjectValues', () => {
+    it('hould return the sum of "value" properties from the input array', () => {
+      expect(mathService.sumArrayObjectValues([{ value: 1 }, { value: 2 }, { value: 3 }])).toBe(6);
+      expect(mathService.sumArrayObjectValues([{ value: 1 }])).toBe(1);
+      expect(mathService.sumArrayObjectValues([{ value: 1 }, { value: 2 }, { value: -3 }])).toBe(0);
+      expect(
+        mathService.sumArrayObjectValues([{ value: 1.5 }, { value: 0 }, { value: -3.2 }]),
+      ).toBeCloseTo(-1.7);
+    });
+
+    it('should throw BadRequestException if any object is invalid', () => {
+      expect(() => {
+        mathService.sumArrayObjectValues([{} as never, { value: 5 }]);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumArrayObjectValues([{ value: 'hello' } as never, { value: 5 }]);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumArrayObjectValues([]);
+      }).toThrow(BadRequestException);
+
+      expect(() => {
+        mathService.sumArrayObjectValues([]);
+      }).toThrow(BadRequestException);
+    });
+  });
 });
