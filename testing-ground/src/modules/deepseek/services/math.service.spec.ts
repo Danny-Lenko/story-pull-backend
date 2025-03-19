@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MathService } from './math.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { of } from 'rxjs';
 import { AxiosResponse } from 'axios';
@@ -8,8 +8,19 @@ import { AxiosResponse } from 'axios';
 describe('MathService', () => {
   let mathService: MathService;
   let httpService: HttpService;
+  let mockResponse: AxiosResponse<{ value: number }>;
 
   beforeEach(async () => {
+    mockResponse = {
+      data: { value: 21 },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {
+        headers: undefined,
+      },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MathService,
@@ -24,6 +35,8 @@ describe('MathService', () => {
 
     mathService = module.get<MathService>(MathService);
     httpService = module.get<HttpService>(HttpService);
+
+    mathService['cache'] = new Map();
   });
 
   it('should be defined', () => {
@@ -196,16 +209,6 @@ describe('MathService', () => {
 
   describe('fetchAndDouble', () => {
     it('should return the doubled value from the API response', async () => {
-      const mockResponse: AxiosResponse<{ value: number }> = {
-        data: { value: 21 },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {
-          headers: undefined,
-        },
-      };
-
       jest.spyOn(httpService, 'get').mockReturnValueOnce(of(mockResponse));
       expect(await mathService.fetchAndDouble(21)).toBe(42);
     });
@@ -216,6 +219,64 @@ describe('MathService', () => {
       });
 
       await expect(mathService.fetchAndDouble(21)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle correctly a status 500 error', async () => {
+      const serverError = new InternalServerErrorException('Internal Error');
+
+      jest.spyOn(httpService, 'get').mockImplementationOnce(() => {
+        throw serverError;
+      });
+
+      await expect(mathService.fetchAndDouble(21)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should send a request to the right URL', async () => {
+      const spy = jest.spyOn(httpService, 'get').mockReturnValueOnce(of(mockResponse));
+      await mathService.fetchAndDouble(21);
+      expect(spy).toHaveBeenCalledWith('https://api.example.com/number/21');
+    });
+  });
+
+  describe('getCachedSquare', () => {
+    it('should return the square of a number', () => {
+      expect(mathService.getCachedSquare(9)).toBe(81);
+      expect(mathService.getCachedSquare(0)).toBe(0);
+      expect(mathService.getCachedSquare(-8)).toBe(64);
+      expect(mathService.getCachedSquare(0.5)).toBe(0.25);
+    });
+
+    it('should add the result to the cache on first call', () => {
+      const spy = jest.spyOn(mathService['cache'], 'set');
+      mathService.getCachedSquare(9);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use cached value on subsequent calls', () => {
+      const set = jest.spyOn(mathService['cache'], 'set');
+      const has = jest.spyOn(mathService['cache'], 'has');
+      const get = jest.spyOn(mathService['cache'], 'get');
+
+      mathService.getCachedSquare(9);
+      expect(set).toHaveBeenCalledTimes(1);
+      expect(has).toHaveBeenCalledWith('square:9');
+      expect(get).toHaveBeenCalledTimes(0);
+
+      mathService.getCachedSquare(9);
+      expect(get).toHaveBeenCalledTimes(1);
+      expect(set).toHaveBeenCalledTimes(1);
+    });
+
+    it('should remove item from cache and add there it again after', () => {
+      const set = jest.spyOn(mathService['cache'], 'set');
+
+      mathService.getCachedSquare(9);
+      expect(set).toHaveBeenCalledTimes(1);
+      expect(mathService['cache'].has('square:9')).toBe(true);
+
+      mathService['cache'].delete('square:9');
+      mathService.getCachedSquare(9);
+      expect(set).toHaveBeenCalledTimes(2);
     });
   });
 });

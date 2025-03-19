@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class MathService {
+  private cache: Map<string, number> = new Map();
+
   constructor(private readonly httpService: HttpService) {}
 
   add(a: number, b: number): number {
@@ -68,5 +70,15 @@ export class MathService {
       console.log('ERROR:', error);
       throw new BadRequestException('Failed to fetch number');
     }
+  }
+
+  getCachedSquare(number: number): number {
+    const cacheKey = `square:${number}`;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+    const result = number * number;
+    this.cache.set(cacheKey, result);
+    return result;
   }
 }
