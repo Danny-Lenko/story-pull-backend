@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('UserService', () => {
   let userService: UserService;
@@ -44,6 +45,28 @@ describe('UserService', () => {
       const user2 = userService.createUser('Jack', 'jack@email.com');
       expect(userService['users']).toContainEqual(user2);
       expect(userService['users'].length).toBe(2);
+    });
+  });
+
+  describe('getUserById', () => {
+    it('should return an existing user', () => {
+      const user1 = userService.createUser('John', 'john@email.com');
+      const user2 = userService.createUser('Jack', 'jack@email.com');
+
+      expect(userService.getUserById(1)).toEqual(user1);
+      expect(userService.getUserById(2)).toEqual(user2);
+    });
+
+    it('should throw a NotFoundException if user not found', () => {
+      userService.createUser('John', 'john@email.com');
+
+      expect(() => {
+        userService.getUserById(999);
+      }).toThrow(NotFoundException);
+
+      expect(() => {
+        userService.getUserById(999);
+      }).toThrow('User with id 999 not found');
     });
   });
 });

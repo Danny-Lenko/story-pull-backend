@@ -66,8 +66,8 @@ export class MathService {
         this.httpService.get(`https://api.example.com/number/${number}`),
       );
       return response.data.value * 2;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.log('ERROR:', error);
       throw new BadRequestException('Failed to fetch number');
     }
   }
