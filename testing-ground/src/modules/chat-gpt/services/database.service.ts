@@ -21,6 +21,11 @@ export class DatabaseService {
     return name;
   }
 
+  async createAsync(name: string): Promise<string> {
+    this.cats.push(name);
+    return name;
+  }
+
   delete(id: number): void {
     if (!this.cats[id]) {
       throw new NotFoundException('Cat not found');

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CatsService } from './cats.service';
 import { DatabaseService } from './database.service';
 import { ModuleMocker, MockFunctionMetadata } from 'jest-mock';
-import { NotFoundException } from '@nestjs/common';
+import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -25,6 +25,10 @@ describe('CatsService', () => {
               return cats[id];
             }),
             create: jest.fn().mockImplementation(async (cat) => {
+              cats.push(cat);
+              return cat;
+            }),
+            createAsync: jest.fn().mockImplementation(async (cat) => {
               cats.push(cat);
               return cat;
             }),
@@ -55,6 +59,32 @@ describe('CatsService', () => {
   describe('findAll', () => {
     it('should return an array of cats', async () => {
       expect(await catsService.findAll()).toEqual(['Tom', 'Whiskers', 'Garfield']);
+    });
+  });
+
+  describe('findAllAsync', () => {
+    const cats = ['Tom', 'Whiskers', 'Garfield'];
+
+    it('should return an array of cats', async () => {
+      jest.spyOn(catsService, 'findAllAsync').mockResolvedValueOnce(cats);
+
+      await expect(catsService.findAllAsync()).resolves.toEqual(cats);
+    });
+
+    it('should return an array of cats', async () => {
+      jest.spyOn(catsService, 'findAllAsync').mockResolvedValueOnce(cats);
+
+      await expect(catsService.findAllAsync()).resolves.toEqual(cats);
+    });
+
+    it('should throw InternalServerErrorException if db returns an error', async () => {
+      jest
+        .spyOn(catsService, 'findAllAsync')
+        .mockRejectedValue(new InternalServerErrorException('Database did not respond'));
+
+      await expect(catsService.findAllAsync()).rejects.toThrow(
+        new InternalServerErrorException('Database did not respond'),
+      );
     });
   });
 

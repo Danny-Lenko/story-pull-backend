@@ -20,4 +20,12 @@ export class CatsService {
   delete(id: number) {
     return this.databaseService.delete(id);
   }
+
+  async findAllAsync(): Promise<string[]> {
+    return ['Tom', 'Whiskers', 'Garfield'];
+  }
+
+  async createAsync(name: string): Promise<string> {
+    return this.databaseService.create(name);
+  }
 }
