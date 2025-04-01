@@ -1,31 +1,32 @@
-import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { of } from 'rxjs';
-import { LoggingInterceptor } from './logging.interceptor';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ExecutionContext, CallHandler, InternalServerErrorException } from '@nestjs/common';
+import { lastValueFrom, of, throwError } from 'rxjs';
+import { LoggingInterceptor, TransformInterceptor } from './logging.interceptor';
 
-describe('LoggingInterceptor', () => {
-  let interceptor: LoggingInterceptor;
+// details: https://claude.ai/share/06e17c7f-f190-4fdd-a0a9-1a0845b8fffd | devdanny
+
+describe('Interceptors', () => {
+  let loggingInterceptor: LoggingInterceptor;
+  let transformInterceptor: TransformInterceptor<any>;
   let mockContext: jest.Mocked<ExecutionContext>;
   let mockCallHandler: jest.Mocked<CallHandler>;
 
-  // Spy on console methods
   const consoleSpy = {
     log: jest.spyOn(console, 'log').mockImplementation(),
   };
 
   beforeEach(() => {
-    interceptor = new LoggingInterceptor();
+    loggingInterceptor = new LoggingInterceptor();
+    transformInterceptor = new TransformInterceptor();
 
-    // Create mock implementations
     mockContext = {
       switchToHttp: jest.fn(),
       getHandler: jest.fn(),
       getClass: jest.fn(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     mockCallHandler = {
       handle: jest.fn().mockReturnValue(of({})),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     // Clear spy calls before each test
@@ -34,113 +35,96 @@ describe('LoggingInterceptor', () => {
 
   afterAll(() => {
     // Restore original console.log implementation
-    consoleSpy.log.mockRestore();
+    // consoleSpy.log.mockRestore();
+
+    jest.restoreAllMocks();
   });
 
-  it('should log incoming request before controller execution', () => {
-    // Act
-    interceptor.intercept(mockContext, mockCallHandler);
+  describe('LoggingInterceptor', () => {
+    it('should log incoming request before controller execution', () => {
+      loggingInterceptor.intercept(mockContext, mockCallHandler);
 
-    // Assert
-    expect(consoleSpy.log).toHaveBeenCalledWith('Incoming request...');
-  });
+      expect(consoleSpy.log).toHaveBeenCalledWith('Incoming request...');
+    });
 
-  it('should log outgoing response after controller execution', (done) => {
-    // Arrange
-    jest.useFakeTimers();
-    jest.spyOn(Date, 'now').mockImplementation(() => 1000);
+    it('should log outgoing response after controller execution', (done) => {
+      jest.spyOn(Date, 'now').mockImplementation(() => 1000);
 
-    // Act
-    const result = interceptor.intercept(mockContext, mockCallHandler);
+      const result = loggingInterceptor.intercept(mockContext, mockCallHandler);
 
-    // Assert
-    result.subscribe(() => {
-      expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Outgoing response...'));
-      expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Time: 0ms'));
+      result.subscribe(() => {
+        expect(consoleSpy.log).toHaveBeenCalledWith(
+          expect.stringContaining('Outgoing response...'),
+        );
+        expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Time: 0ms'));
+        done();
+      });
+    });
 
-      jest.useRealTimers();
-      done();
+    it('should correctly measure execution time', (done) => {
+      // let callCount = 0;
+      const mockTimestamps = [1000, 2500];
+
+      jest.spyOn(Date, 'now').mockImplementation(() => {
+        // return mockTimestamps[callCount++];
+        return mockTimestamps.shift();
+      });
+
+      const result = loggingInterceptor.intercept(mockContext, mockCallHandler);
+
+      result.subscribe(() => {
+        expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Time: 1500ms'));
+        done();
+      });
     });
   });
 
-  it('should correctly measure execution time', (done) => {
-    // Arrange
-    let callCount = 0;
-    const mockTimestamps = [1000, 2500]; // Simulating 1.5 seconds execution time
+  describe('TransformInterceptor', () => {
+    it('should wrap a valid response in {success: true, data}', async () => {
+      // some explanation: https://stackoverflow.com/a/72083296/16906724
 
-    jest.spyOn(Date, 'now').mockImplementation(() => {
-      return mockTimestamps[callCount++];
+      const handler = {
+        handle: jest.fn().mockReturnValue(of({ username: 'John', id: 1 })),
+      } as any;
+
+      const result = transformInterceptor.intercept(mockContext, handler);
+
+      const { data, success } = await lastValueFrom(result);
+
+      expect(data.username).toBe('John');
+      expect(data.id).toBe(1);
+      expect(success).toBe(true);
     });
 
-    mockCallHandler.handle.mockReturnValue(of({}));
+    it('should wrap a null response in {success: true, data: null}', async () => {
+      const handler = {
+        handle: jest.fn().mockReturnValue(of(null)),
+      } as any;
 
-    // Act
-    const result = interceptor.intercept(mockContext, mockCallHandler);
+      const result = transformInterceptor.intercept(mockContext, handler);
 
-    // Assert
-    result.subscribe(() => {
-      expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Time: 1500ms'));
+      const { data, success } = await lastValueFrom(result);
 
-      jest.useRealTimers();
-      done();
+      expect(data).toBe(null);
+      expect(success).toBe(true);
+    });
+
+    it('should wrap an invalid response in {success: false, error}', async () => {
+      // some explanation: https://stackoverflow.com/a/76989112/16906724
+      // https://chatgpt.com/share/67e6df87-f048-800b-942a-0d044858055c | danny.lenko.14
+
+      const handlerMock = {
+        handle() {
+          return throwError(() => new InternalServerErrorException('database did not respond'));
+        },
+      } as CallHandler;
+
+      const result = transformInterceptor.intercept(mockContext, handlerMock);
+
+      await expect(lastValueFrom(result)).resolves.toEqual({
+        success: false,
+        error: 'database did not respond',
+      });
     });
   });
 });
-
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { LoggingInterceptor } from './logging.interceptor';
-// import { CallHandler, ExecutionContext } from '@nestjs/common';
-// import { firstValueFrom, Observable, of, Subscriber } from 'rxjs';
-
-// describe('LoggingInterceptor', () => {
-//   let loggingInterceptor: LoggingInterceptor;
-//   let next: CallHandler;
-
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [LoggingInterceptor],
-//     }).compile();
-
-//     next = {
-//       handle: jest.fn().mockReturnValue(of(null)),
-//     };
-
-//     jest.spyOn(console, 'log').mockImplementation(() => {});
-
-//     loggingInterceptor = module.get<LoggingInterceptor>(LoggingInterceptor);
-//   });
-
-//   describe('LoggingInterceptor', () => {
-//     it('should log <Incoming request...> before controller execution', () => {
-//       jest.spyOn(console, 'log');
-
-//       loggingInterceptor.intercept({} as ExecutionContext, next);
-//       expect(console.log).toHaveBeenCalledTimes(1);
-//       expect(console.log).toHaveBeenCalledWith('Incoming request...');
-//     });
-
-//     it('should log <Outgoing response... Time:> before controller execution', (done) => {
-//       next = {
-//         handle: jest.fn().mockReturnValue(of(null)),
-//       };
-//       jest.spyOn(console, 'log');
-
-//       loggingInterceptor.intercept({} as ExecutionContext, next).subscribe(() => {
-//         expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Outgoing response...'));
-//         done();
-//       });
-//     });
-
-//     it('should correctly calculate execution time', async () => {
-//       // jest.spyOn(console, 'log');
-
-//       await firstValueFrom(loggingInterceptor.intercept({} as ExecutionContext, next));
-
-//       const logCalls = console.log.mock.calls;
-//       const timeLog = logCalls.find((call) => call[0].includes('Outgoing response...'));
-//       const timeTaken = parseInt(timeLog[0].match(/\d+/)[0], 10);
-
-//       expect(timeTaken).toBeGreaterThanOrEqual(0); // Очікуємо хоча б 0 мс, бо `of(null)` швидкий
-//     });
-//   });
-// });
