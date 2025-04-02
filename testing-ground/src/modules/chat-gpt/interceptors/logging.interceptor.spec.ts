@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ExecutionContext, CallHandler, InternalServerErrorException } from '@nestjs/common';
-import { lastValueFrom, of, throwError } from 'rxjs';
-import { LoggingInterceptor, TransformInterceptor } from './logging.interceptor';
+import {
+  ExecutionContext,
+  CallHandler,
+  InternalServerErrorException,
+  RequestTimeoutException,
+} from '@nestjs/common';
+import { delay, lastValueFrom, of, throwError } from 'rxjs';
+import {
+  LoggingInterceptor,
+  TimeoutInterceptor,
+  TransformInterceptor,
+} from './logging.interceptor';
 
 // details: https://claude.ai/share/06e17c7f-f190-4fdd-a0a9-1a0845b8fffd | devdanny
 
@@ -10,6 +19,7 @@ describe('Interceptors', () => {
   let transformInterceptor: TransformInterceptor<any>;
   let mockContext: jest.Mocked<ExecutionContext>;
   let mockCallHandler: jest.Mocked<CallHandler>;
+  let timeoutInterceptor: TimeoutInterceptor;
 
   const consoleSpy = {
     log: jest.spyOn(console, 'log').mockImplementation(),
@@ -18,6 +28,7 @@ describe('Interceptors', () => {
   beforeEach(() => {
     loggingInterceptor = new LoggingInterceptor();
     transformInterceptor = new TransformInterceptor();
+    timeoutInterceptor = new TimeoutInterceptor();
 
     mockContext = {
       switchToHttp: jest.fn(),
@@ -124,6 +135,79 @@ describe('Interceptors', () => {
       await expect(lastValueFrom(result)).resolves.toEqual({
         success: false,
         error: 'database did not respond',
+      });
+    });
+  });
+
+  describe('TimeoutInterceptor', () => {
+    it('should pass if request is proccessed fastly', (done) => {
+      const handler = {
+        handle: jest.fn(() => of({ hello: 'Hello' })),
+      } as CallHandler;
+
+      timeoutInterceptor.intercept(mockContext, handler).subscribe({
+        next: (value) => {
+          expect(value).toEqual({ hello: 'Hello' });
+          done();
+        },
+        error: (error) => {
+          done(error);
+        },
+      });
+    });
+
+    // Should be ideally tested also for null and arrays
+    it('should pass and return {} as data if request is proccessed fastly', (done) => {
+      const handler = {
+        handle: jest.fn(() => of({})),
+      } as CallHandler;
+
+      timeoutInterceptor.intercept(mockContext, handler).subscribe({
+        next: (value) => {
+          expect(value).toEqual({});
+          done();
+        },
+        error: (error) => {
+          done(error);
+        },
+      });
+    });
+
+    it('should throw timeout exception for a request with the delay', (done) => {
+      const handler = {
+        handle: jest.fn(() => of(null).pipe(delay(3000))),
+      } as CallHandler;
+
+      timeoutInterceptor.intercept(mockContext, handler).subscribe({
+        next: () => done.fail('Expected timeout exception, but got a successful response'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(RequestTimeoutException);
+          expect(error.message).toBe('Request timed out');
+          done();
+        },
+      });
+    });
+
+    it('should work with different response types', (done) => {
+      const responseTypes = [null, {}, [], 'string', 123, true];
+      let completedCount = 0;
+
+      responseTypes.forEach((data) => {
+        const handler: CallHandler = {
+          handle: () => of(data),
+        };
+
+        timeoutInterceptor.intercept(mockContext, handler).subscribe({
+          next: (result) => {
+            expect(result).toEqual(data);
+            completedCount++;
+
+            if (completedCount === responseTypes.length) {
+              done();
+            }
+          },
+          error: (err) => done.fail(err),
+        });
       });
     });
   });
