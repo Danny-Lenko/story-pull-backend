@@ -4,10 +4,12 @@ import {
   CallHandler,
   InternalServerErrorException,
   RequestTimeoutException,
+  HttpException,
 } from '@nestjs/common';
 import { delay, lastValueFrom, of, throwError } from 'rxjs';
 import {
   LoggingInterceptor,
+  RateLimiterInterceptor,
   TimeoutInterceptor,
   TransformInterceptor,
 } from './logging.interceptor';
@@ -20,6 +22,7 @@ describe('Interceptors', () => {
   let mockContext: jest.Mocked<ExecutionContext>;
   let mockCallHandler: jest.Mocked<CallHandler>;
   let timeoutInterceptor: TimeoutInterceptor;
+  let rateLimiterInterceptor: RateLimiterInterceptor;
 
   const consoleSpy = {
     log: jest.spyOn(console, 'log').mockImplementation(),
@@ -29,6 +32,7 @@ describe('Interceptors', () => {
     loggingInterceptor = new LoggingInterceptor();
     transformInterceptor = new TransformInterceptor();
     timeoutInterceptor = new TimeoutInterceptor();
+    rateLimiterInterceptor = new RateLimiterInterceptor();
 
     mockContext = {
       switchToHttp: jest.fn(),
@@ -42,6 +46,11 @@ describe('Interceptors', () => {
 
     // Clear spy calls before each test
     consoleSpy.log.mockClear();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   afterAll(() => {
@@ -209,6 +218,83 @@ describe('Interceptors', () => {
           error: (err) => done.fail(err),
         });
       });
+    });
+  });
+
+  describe('RateLimiterInterceptor', () => {
+    it('should allow a request if limit is not reached', () => {
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            ip: 'mockIp',
+          }),
+        }),
+      } as ExecutionContext;
+
+      const handler = {
+        handle: jest.fn(() => of({})),
+      } as CallHandler;
+
+      rateLimiterInterceptor.intercept(context, handler);
+      rateLimiterInterceptor.intercept(context, handler);
+      rateLimiterInterceptor.intercept(context, handler);
+
+      expect(handler.handle).toHaveBeenCalledTimes(3);
+      expect(() => rateLimiterInterceptor.intercept(context, handler)).not.toThrow();
+    });
+
+    it('should throw HttpException if limit is reached', () => {
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            ip: 'mockIp',
+          }),
+        }),
+      } as ExecutionContext;
+
+      const handler = {
+        handle: jest.fn(() => of({})),
+      } as CallHandler;
+
+      jest.useFakeTimers();
+
+      for (let i = 0; i < 3; i++) {
+        rateLimiterInterceptor.intercept(context, handler);
+        expect(handler.handle).toHaveBeenCalled();
+      }
+
+      expect(() => {
+        rateLimiterInterceptor.intercept(context, handler);
+      }).toThrow(HttpException);
+
+      expect(handler.handle).toHaveBeenCalledTimes(3);
+    });
+
+    it('should clear limit after 10 seconds', () => {
+      jest.useFakeTimers();
+
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            ip: 'mockIp',
+          }),
+        }),
+      } as ExecutionContext;
+
+      const handler = {
+        handle: jest.fn(() => of({})),
+      } as CallHandler;
+
+      for (let i = 0; i < 3; i++) {
+        rateLimiterInterceptor.intercept(context, handler);
+        expect(handler.handle).toHaveBeenCalled();
+      }
+
+      jest.advanceTimersByTime(11 * 1000);
+
+      rateLimiterInterceptor.intercept(context, handler);
+      expect(handler.handle).toHaveBeenCalledTimes(4);
+      expect(() => rateLimiterInterceptor.intercept(context, handler)).not.toThrow();
     });
   });
 });
